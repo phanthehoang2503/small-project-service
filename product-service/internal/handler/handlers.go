@@ -25,6 +25,7 @@ func GetProducts(s *repo.Database) gin.HandlerFunc {
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"}) // status bad request = 400
+			return
 		}
 
 		p, err := s.Get(id) // find the prod id

@@ -1,0 +1,15 @@
+POST localhost:8080/products
+Content-Type: "application/json"
+
+[
+  { "name": "Logitech M331 Wireless Mouse", "price": 350000, "stock": 120 },
+  { "name": "Keychron K2 Mechanical Keyboard", "price": 1800000, "stock": 75 },
+  { "name": "Samsung 27-inch Monitor", "price": 3900000, "stock": 34 },
+  { "name": "Ugreen USB-C Hub 5-in-1", "price": 420000, "stock": 150 },
+  { "name": "Samsung T7 Portable SSD 1TB", "price": 2200000, "stock": 48 },
+  { "name": "Razer Kraken Gaming Headset", "price": 1590000, "stock": 60 },
+  { "name": "JBL Go 3 Bluetooth Speaker", "price": 950000, "stock": 95 },
+  { "name": "Aluminum Laptop Stand", "price": 270000, "stock": 110 },
+  { "name": "Xiaomi Watch 2 Smartwatch", "price": 2890000, "stock": 27 },
+  { "name": "Logitech C270 HD Webcam", "price": 520000, "stock": 80 }
+]
