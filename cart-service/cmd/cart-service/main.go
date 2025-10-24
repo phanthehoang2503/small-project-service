@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/router"
@@ -19,6 +20,8 @@ func main() {
 	if err := db.AutoMigrate(&model.Cart{}); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
+
+	godotenv.Load()
 
 	r := gin.Default()
 	router.RegisterRoutes(r, cartRepo)

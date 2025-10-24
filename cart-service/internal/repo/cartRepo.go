@@ -3,6 +3,7 @@ package repo
 import (
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type CartRepo struct {
@@ -13,21 +14,31 @@ func NewCartRepo(db *gorm.DB) *CartRepo {
 	return &CartRepo{DB: db}
 }
 
-func (d *CartRepo) AddUpdateItems(i *model.Cart) error { //i: item
+func (d *CartRepo) AddUpdateItems(i *model.Cart) (model.Cart, error) { //i: item
+	tx := d.DB.Begin()
+	if tx.Error != nil {
+		return model.Cart{}, tx.Error
+	}
+
 	var exist model.Cart
-	err := d.DB.Where("product_id = ?", i.ProductID).First(&exist).Error
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("product_id = ?", i.ProductID).First(&exist).Error
 	if err == nil {
 		exist.Quantity += i.Quantity
 		exist.Subtotal += exist.Price * int64(exist.Quantity)
-		return d.DB.Save(&exist).Error
+		if err := tx.Save(&exist).Error; err != nil {
+			tx.Rollback() // -> rollback transaction
+			return model.Cart{}, err
+		}
 	}
 
 	if err == gorm.ErrRecordNotFound {
-		return d.DB.Save(&i).Error
+		tx.Rollback()
+		return model.Cart{}, d.DB.Save(&i).Error
 	}
 
-	return err
-}
+	tx.Commit() //-> commit transaction
+	return *i, err
+} // v.01 change 1: added tx handle to handle added exist item into cart more robust
 
 func (d *CartRepo) List() ([]model.Cart, error) {
 	var items []model.Cart
@@ -35,14 +46,26 @@ func (d *CartRepo) List() ([]model.Cart, error) {
 	return items, err
 }
 
-func (d *CartRepo) UpdateQuantity(id uint, quantity int) error {
+func (d *CartRepo) UpdateQuantity(id uint, quantity int) (model.Cart, error) {
 	var item model.Cart
 	if err := d.DB.First(&item, id).Error; err != nil {
-		return err
+		return model.Cart{}, err // gorm.ErrRecordNotFound if missing
 	}
+
+	if quantity == 0 {
+		if err := d.DB.Delete(&model.Cart{}, id).Error; err != nil {
+			return model.Cart{}, err
+		}
+		return model.Cart{}, gorm.ErrRecordNotFound
+	}
+
 	item.Quantity = quantity
 	item.Subtotal = item.Price * int64(quantity)
-	return d.DB.Save(&item).Error
+
+	if err := d.DB.Save(&item).Error; err != nil {
+		return model.Cart{}, err
+	}
+	return item, nil
 }
 
 func (d *CartRepo) Remove(id uint) error {

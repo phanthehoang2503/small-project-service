@@ -1,0 +1,6 @@
+PUT http://localhost:8081/cart/4
+Content-Type: application/json
+
+{
+  "quantity": 4
+}

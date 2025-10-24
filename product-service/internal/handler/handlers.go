@@ -9,9 +9,9 @@ import (
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
 )
 
-func ListProducts(s *repo.Database) gin.HandlerFunc {
+func ListProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) { // gin.Context have all the func inside, docs: https://pkg.go.dev/github.com/gin-gonic/gin#Context
-		products, err := s.List()
+		products, err := r.List()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()}) // internal server error = 500
 		}
@@ -19,7 +19,7 @@ func ListProducts(s *repo.Database) gin.HandlerFunc {
 	}
 }
 
-func GetProducts(s *repo.Database) gin.HandlerFunc {
+func GetProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -28,7 +28,7 @@ func GetProducts(s *repo.Database) gin.HandlerFunc {
 			return
 		}
 
-		p, err := s.Get(id) // find the prod id
+		p, err := r.Get(id) // find the prod id
 		if err != nil {     // in case not found
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
@@ -38,7 +38,7 @@ func GetProducts(s *repo.Database) gin.HandlerFunc {
 	}
 }
 
-func CreateProducts(s *repo.Database) gin.HandlerFunc {
+func CreateProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in model.Product
 		if err := c.ShouldBindJSON(&in); err != nil { //bind attempts to json body to in var
@@ -46,7 +46,7 @@ func CreateProducts(s *repo.Database) gin.HandlerFunc {
 			return
 		}
 
-		created, err := s.Create(in)
+		created, err := r.Create(in)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 		}
@@ -54,7 +54,7 @@ func CreateProducts(s *repo.Database) gin.HandlerFunc {
 	}
 }
 
-func UpdateProducts(s *repo.Database) gin.HandlerFunc {
+func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -68,7 +68,7 @@ func UpdateProducts(s *repo.Database) gin.HandlerFunc {
 			return
 		}
 
-		updated, err := s.Update(id, in) //product's struct, boolean
+		updated, err := r.Update(id, in) //product's struct, boolean
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()}) // not found = 404
 			return
@@ -78,7 +78,7 @@ func UpdateProducts(s *repo.Database) gin.HandlerFunc {
 	}
 }
 
-func DeleteProducts(s *repo.Database) gin.HandlerFunc {
+func DeleteProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -86,8 +86,8 @@ func DeleteProducts(s *repo.Database) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"}) // status bad request = 400
 		}
 
-		if s.Delete(id) != nil { //Delete return true if deleted an id and vice versa
-			c.JSON(404, s.Delete(id).Error())
+		if r.Delete(id) != nil { //Delete return true if deleted an id and vice versa
+			c.JSON(404, r.Delete(id).Error())
 			return
 		}
 

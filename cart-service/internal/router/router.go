@@ -10,5 +10,9 @@ func RegisterRoutes(r *gin.Engine, s *repo.CartRepo) {
 	api := r.Group("/cart")
 	{
 		api.POST("", handler.AddToCart(s))
+		api.GET("", handler.GetCart(s))
+		api.PUT("/:id", handler.UpdateQuantity(s))
+		api.DELETE("/:id", handler.RemoveItem(s))
+		api.DELETE("", handler.ClearCart(s))
 	}
 }

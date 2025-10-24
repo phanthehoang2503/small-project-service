@@ -2,12 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
+	"gorm.io/gorm"
 )
 
 const productService = "http://localhost:8080/products"
@@ -31,10 +35,17 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
+		base := os.Getenv("PRODUCT_SERVICE_URL")        //--> http://localhost:8080/product: url
+		url := fmt.Sprintf("%s/%d", base, in.ProductID) //  --> url/productid
 		//Get product info
-		resp, err := http.Get(fmt.Sprintf("%s/%d", productService, in.ProductID))
+		resp, err := http.Get(url) //--> http://localhost:8080/base/:id (ex: .../product/4)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
 			return
 		}
 
@@ -43,6 +54,7 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read product"})
 			return
 		}
+		defer resp.Body.Close()
 
 		if in.Quantity > p.Stock {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient stock"})
@@ -51,16 +63,75 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 
 		item := model.Cart{
 			ProductID: p.ID,
-			Quantity:  p.Stock,
+			Quantity:  in.Quantity,
 			Price:     p.Price,
 			Subtotal:  p.Price * int64(in.Quantity),
 		}
 
-		if err := r.AddUpdateItems(&item); err != nil {
+		addedItem, err := r.AddUpdateItems(&item)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusCreated, item)
+		c.JSON(http.StatusCreated, addedItem)
+	}
+}
+
+func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+		var body struct {
+			Quantity int `json:"quantity"`
+		}
+		if c.ShouldBindJSON(&body) != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": c.ShouldBindJSON(&body).Error()})
+			return
+		}
+
+		updated, err := r.UpdateQuantity(uint(id), body.Quantity)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "item not found in cart"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, updated)
+	}
+}
+
+func GetCart(r *repo.CartRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		items, err := r.List()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, items)
+	}
+}
+
+func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err := r.Remove(uint(id)); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+	}
+}
+
+func ClearCart(r *repo.CartRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if r.ClearCart() != nil {
+			c.JSON(http.StatusInternalServerError, r.ClearCart().Error())
+			return
+		}
+		c.Status(http.StatusNoContent)
 	}
 }
