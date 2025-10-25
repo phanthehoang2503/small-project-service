@@ -9,8 +9,17 @@ import (
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/router"
 	"github.com/phanthehoang2503/small-project/internal/database"
+
+	_ "github.com/phanthehoang2503/small-project/cart-service/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Cart Service API
+// @version 1.0
+// @description Manage shopping cart items
+// @host localhost:8081
+// @BasePath /
 func main() {
 	db, err := database.ConnectDB()
 	if err != nil {
@@ -25,5 +34,7 @@ func main() {
 
 	r := gin.Default()
 	router.RegisterRoutes(r, cartRepo)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8081")
 }
