@@ -7,7 +7,7 @@ type Order struct {
 	UserId uint   `json:"user_id"`
 	Total  int64  `json:"total"`
 	Status string `json:"status"`
-	Item   []OrderItem
+	Items  []OrderItem
 }
 
 type OrderItem struct {
