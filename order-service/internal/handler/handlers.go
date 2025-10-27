@@ -23,7 +23,7 @@ type UpdateStatusReq struct {
 // @Tags Orders
 // @Accept json
 // @Produce json
-// @Param payload body CreateOrderReq true "Create order payload"
+// @Param payload body model.Order true "Create order payload"
 // @Success 201 {object} model.Order
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
