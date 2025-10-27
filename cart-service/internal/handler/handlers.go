@@ -14,8 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const productService = "http://localhost:8080/products"
-
 // struct Product for decode product service response
 type Product struct {
 	ID    uint   `json:"id"`

@@ -9,6 +9,14 @@ import (
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
 )
 
+// ListProducts godoc
+// @Summary List all products
+// @Description Returns all products available in the store
+// @Tags Products
+// @Produce json
+// @Success 200 {array} model.Product
+// @Failure 500 {object} map[string]string
+// @Router /products [get]
 func ListProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) { // gin.Context have all the func inside, docs: https://pkg.go.dev/github.com/gin-gonic/gin#Context
 		products, err := r.List()
@@ -19,6 +27,16 @@ func ListProducts(r *repo.Database) gin.HandlerFunc {
 	}
 }
 
+// GetProducts godoc
+// @Summary Get a product by ID
+// @Description Returns product information based on the ID
+// @Tags Products
+// @Produce json
+// @Param id path int true "Product ID"
+// @Success 200 {object} model.Product
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /products/{id} [get]
 func GetProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
@@ -38,6 +56,17 @@ func GetProducts(r *repo.Database) gin.HandlerFunc {
 	}
 }
 
+// CreateProducts godoc
+// @Summary Create a new product
+// @Description Add a new product to the store
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Param payload body model.Product true "Product payload"
+// @Success 201 {object} model.Product
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /products [post]
 func CreateProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in model.Product
@@ -54,6 +83,19 @@ func CreateProducts(r *repo.Database) gin.HandlerFunc {
 	}
 }
 
+// UpdateProducts godoc
+// @Summary Update an existing product
+// @Description Update product information by ID
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Param payload body model.Product true "Updated product data"
+// @Success 200 {object} model.Product
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /products/{id} [put]
 func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
@@ -78,6 +120,15 @@ func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 	}
 }
 
+// DeleteProducts godoc
+// @Summary Delete a product
+// @Description Remove a product by ID
+// @Tags Products
+// @Param id path int true "Product ID"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /products/{id} [delete]
 func DeleteProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
