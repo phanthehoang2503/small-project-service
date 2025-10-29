@@ -16,23 +16,16 @@ func NewOrderRepo(db *gorm.DB) *OrderRepo {
 }
 
 // Stores order and its items within transaction
-func (r *OrderRepo) CreateOrder(orders *model.Order) error {
-	if orders == nil || len(orders.Items) == 0 {
+func (r *OrderRepo) CreateOrder(order *model.Order) error {
+	if order == nil || len(order.Items) == 0 {
 		return errors.New("invalid order")
 	}
-	// same as func (...) AddUpdateItems from cartRepo in cart-service but in a cleaner way.
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(orders).Error; err != nil {
+		if err := tx.Create(order).Error; err != nil {
 			return err
-		} // check if ini order yet
-		for i := range orders.Items {
-			orders.Items[i].OrderId = orders.ID //assign key
-			if err := tx.Create(&orders.Items[i]).Error; err != nil {
-				return err
-			}
 		}
 		return nil
-	}) // return error if any line in this got error and revoke all the transaction or vice versa
+	})
 }
 
 func (r *OrderRepo) ListByUser(userID uint) ([]model.Order, error) {

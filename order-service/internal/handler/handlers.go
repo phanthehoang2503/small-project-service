@@ -18,6 +18,15 @@ type UpdateStatusReq struct {
 	Status string `json:"status" binding:"required" example:"Paid"`
 }
 
+type cartItemResp struct {
+	CartID    uint  `json:"ID,omitempty"`
+	UserID    uint  `json:"user_id"`
+	ProductID uint  `json:"product_id"`
+	Quantity  int   `json:"quantity"`
+	Price     int64 `json:"price"`
+	Subtotal  int64 `json:"subtotal"`
+}
+
 // CreateOrder godoc
 // @Summary Create a new order from the current cart
 // @Tags Orders
@@ -45,7 +54,13 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		var cartItems []model.OrderItem
+		var cartItems []struct {
+			ProductID uint  `json:"product_id"`
+			Quantity  int   `json:"quantity"`
+			Price     int64 `json:"price"`
+			Subtotal  int64 `json:"subtotal"`
+		}
+
 		if err := json.NewDecoder(resp.Body).Decode(&cartItems); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid response from cart service"})
 			return
@@ -57,18 +72,20 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 
 		order := &model.Order{
-			UserId: in.UserId,
+			UserID: in.UserID,
 			Status: "Pending",
 		}
 
 		var total int64
 		for _, item := range cartItems {
-			order.Items = append(order.Items, model.OrderItem{
-				ProductId: item.ID,
+			oi := model.OrderItem{
+				ProductID: item.ProductID,
 				Quantity:  item.Quantity,
 				Price:     item.Price,
 				Subtotal:  item.Subtotal,
-			})
+			}
+			oi.ID = 0
+			order.Items = append(order.Items, oi)
 			total += item.Subtotal
 		}
 		order.Total = total
