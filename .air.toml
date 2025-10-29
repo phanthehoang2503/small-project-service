@@ -1,6 +1,0 @@
-[build]
-cmd = "go run ./cmd/api"
-bin = "tmp/main"
-full_bin = "go run ./cmd/api"
-include_ext = ["go", "env", "toml"]
-exclude_dir = ["vendor", "docs", "tmp"]

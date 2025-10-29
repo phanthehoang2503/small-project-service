@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -18,9 +19,19 @@ func ConnectDB() (*gorm.DB, error) {
 		os.Getenv("DB_NAME"),
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("open db: %w", err)
+	var db *gorm.DB
+	var err error
+
+	for i := 0; i < 10; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			fmt.Println("connected to database")
+			return db, nil
+		}
+
+		fmt.Printf("attempt %d: failed to connect to database (%v)\n", i+1, err)
+		time.Sleep(3 * time.Second)
 	}
-	return db, nil
+
+	return nil, fmt.Errorf("failed to connect to database after retries: %w", err)
 }
