@@ -28,6 +28,23 @@ type AuthHandler struct {
 	jwtExp    time.Duration
 }
 
+type registerResp struct {
+	ID       uint   `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
+type loginResp struct {
+	Token    string `json:"token"`
+	ID       uint   `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
+type errorResp struct {
+	Error string `json:"error"`
+}
+
 func NewAuthHandler(r repo.UserRepo, secret []byte, expHours int) *AuthHandler {
 	if expHours <= 0 {
 		expHours = 72
@@ -40,6 +57,16 @@ func NewAuthHandler(r repo.UserRepo, secret []byte, expHours int) *AuthHandler {
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param payload body registerReq true "Register payload"
+// @Success 201 {object} registerResp
+// @Failure 400 {object} errorResp
+// @Failure 500 {object} errorResp
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	req := registerReq{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,13 +74,21 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Check for duplicate mail or username
-	if u, _ := h.Repo.GetUser(req.Email); u != nil {
+	// Check duplicate email
+	if u, err := h.Repo.GetUser(req.Email); err == nil && u != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email already in use"})
 		return
+	} else if err != nil && err != repo.ErrNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
 	}
-	if u, _ := h.Repo.GetUser(req.Username); u != nil {
+
+	// Check duplicate username
+	if u, err := h.Repo.GetUser(req.Username); err == nil && u != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username already in use"})
+		return
+	} else if err != nil && err != repo.ErrNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
 
@@ -82,6 +117,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
+// Login godoc
+// @Summary Login with email or username
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param payload body loginReq true "Login payload"
+// @Success 200 {object} loginResp
+// @Failure 400 {object} errorResp
+// @Failure 401 {object} errorResp
+// @Failure 500 {object} errorResp
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
