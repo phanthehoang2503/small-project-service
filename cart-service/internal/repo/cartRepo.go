@@ -14,15 +14,17 @@ func NewCartRepo(db *gorm.DB) *CartRepo {
 	return &CartRepo{DB: db}
 }
 
-func (d *CartRepo) AddUpdateItems(i *model.Cart) (model.Cart, error) { //i: item
+func (d *CartRepo) AddNewItems(i *model.Cart) (model.Cart, error) { //i: item
 	tx := d.DB.Begin()
 	if tx.Error != nil {
 		return model.Cart{}, tx.Error
 	}
 
 	var exist model.Cart
-	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("product_id = ?", i.ProductID).First(&exist).Error
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ? AND product_id = ?", i.UserID, i.ProductID).First(&exist).Error
 	if err == nil {
+		//item exist then update quantity
 		exist.Quantity += i.Quantity
 		exist.Subtotal += exist.Price * int64(exist.Quantity)
 		if err := tx.Save(&exist).Error; err != nil {
@@ -32,24 +34,28 @@ func (d *CartRepo) AddUpdateItems(i *model.Cart) (model.Cart, error) { //i: item
 	}
 
 	if err == gorm.ErrRecordNotFound {
-		tx.Rollback()
-		return model.Cart{}, d.DB.Save(&i).Error
+		if err := tx.Create(&i).Error; err != nil {
+			tx.Rollback()
+			return model.Cart{}, err
+		}
+		tx.Commit()
+		return *i, nil
 	}
 
-	tx.Commit() //-> commit transaction
+	tx.Rollback() //-> commit transaction
 	return *i, err
-} // v.01 change 1: added tx handle to handle added exist item into cart more robust
+} // v.01 change 1: added tx handle to handle added exist item into cart more robust --> update for handle user
 
-func (d *CartRepo) List() ([]model.Cart, error) {
+func (d *CartRepo) List(UserID uint) ([]model.Cart, error) {
 	var items []model.Cart
-	err := d.DB.Find(&items).Error
+	err := d.DB.Where(("user_id = ?"), UserID).Find(&items).Error
 	return items, err
 }
 
-func (d *CartRepo) UpdateQuantity(id uint, quantity int) (model.Cart, error) {
+func (d *CartRepo) UpdateQuantity(userID, id uint, quantity int) (model.Cart, error) {
 	var item model.Cart
-	if err := d.DB.First(&item, id).Error; err != nil {
-		return model.Cart{}, err // gorm.ErrRecordNotFound if missing
+	if err := d.DB.Where(("user_id = ? AND id = ?"), userID, id).First(&item).Error; err != nil {
+		return model.Cart{}, err
 	}
 
 	if quantity == 0 {
@@ -68,8 +74,8 @@ func (d *CartRepo) UpdateQuantity(id uint, quantity int) (model.Cart, error) {
 	return item, nil
 }
 
-func (d *CartRepo) Remove(id uint) error {
-	res := d.DB.Delete(&model.Cart{}, id)
+func (d *CartRepo) Remove(UserID, id uint) error {
+	res := d.DB.Where("user_id = ? AND id = ?", UserID, id).Delete(&model.Cart{})
 	if res.Error != nil {
 		return res.Error
 	}
@@ -79,6 +85,6 @@ func (d *CartRepo) Remove(id uint) error {
 	return nil
 }
 
-func (d *CartRepo) ClearCart() error {
-	return d.DB.Exec("DELETE FROM cart_items").Error
+func (d *CartRepo) ClearCart(userID uint) error {
+	return d.DB.Where("user_id = ?", userID).Delete(&model.Cart{}).Error
 }

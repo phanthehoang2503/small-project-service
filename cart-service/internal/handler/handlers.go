@@ -42,6 +42,24 @@ type CartResponse struct {
 	Subtotal  int64 `json:"subtotal" example:"20000"`
 }
 
+// helper: get user_id from gin.Context (handles uint or float64)
+func getUserIDFromContext(c *gin.Context) (uint, error) {
+	val, ok := c.Get("user_id")
+	if !ok {
+		return 0, errors.New("unauthorized")
+	}
+	switch v := val.(type) {
+	case uint:
+		return v, nil
+	case int:
+		return uint(v), nil
+	case float64:
+		return uint(v), nil
+	default:
+		return 0, errors.New("invalid user id type")
+	}
+}
+
 // AddToCart godoc
 // @Summary Add item to cart
 // @Description Add a product to the cart (can add amount of it if already in the cart). Call product-service to get stock and price
@@ -51,14 +69,21 @@ type CartResponse struct {
 // @Param payload body AddToCartReq true "Add to cart payload"
 // @Success 201 {object} handler.CartResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /cart [post]
+// @Security BearerAuth
 func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in AddToCartReq
-
 		if err := c.ShouldBindJSON(&in); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		userID, err := getUserIDFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
@@ -70,6 +95,7 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
@@ -81,7 +107,6 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read product"})
 			return
 		}
-		defer resp.Body.Close()
 
 		if in.Quantity > p.Stock {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient stock"})
@@ -89,19 +114,26 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 		}
 
 		item := model.Cart{
+			UserID:    userID,
 			ProductID: p.ID,
 			Quantity:  in.Quantity,
 			Price:     p.Price,
 			Subtotal:  p.Price * int64(in.Quantity),
 		}
 
-		addedItem, err := r.AddUpdateItems(&item)
+		addedItem, err := r.AddNewItems(&item)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusCreated, addedItem)
+		c.JSON(http.StatusCreated, CartResponse{
+			ID:        addedItem.ID,
+			ProductID: addedItem.ProductID,
+			Quantity:  addedItem.Quantity,
+			Price:     addedItem.Price,
+			Subtotal:  addedItem.Subtotal,
+		})
 	}
 }
 
@@ -114,21 +146,33 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 // @Param payload body UpdateQuantityReq true "New quantity"
 // @Success 200 {object} handler.CartResponse
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /cart/{id} [put]
+// @Security BearerAuth
 func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-		var body struct {
-			Quantity int `json:"quantity"`
+		id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
 		}
-		if c.ShouldBindJSON(&body) != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": c.ShouldBindJSON(&body).Error()})
+		id := uint(id64)
+
+		var body UpdateQuantityReq
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		updated, err := r.UpdateQuantity(uint(id), body.Quantity)
+		userID, err := getUserIDFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		updated, err := r.UpdateQuantity(userID, id, body.Quantity)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "item not found in cart"})
@@ -138,7 +182,13 @@ func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, updated)
+		c.JSON(http.StatusOK, CartResponse{
+			ID:        updated.ID,
+			ProductID: updated.ProductID,
+			Quantity:  updated.Quantity,
+			Price:     updated.Price,
+			Subtotal:  updated.Subtotal,
+		})
 	}
 }
 
@@ -147,16 +197,36 @@ func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 // @Tags Cart
 // @Produce json
 // @Success 200 {array} handler.CartResponse
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /cart [get]
+// @Security BearerAuth
 func GetCart(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		items, err := r.List()
+		userID, err := getUserIDFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		items, err := r.List(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, items)
+
+		var resp []CartResponse
+		for _, it := range items {
+			resp = append(resp, CartResponse{
+				ID:        it.ID,
+				ProductID: it.ProductID,
+				Quantity:  it.Quantity,
+				Price:     it.Price,
+				Subtotal:  it.Subtotal,
+			})
+		}
+
+		c.JSON(http.StatusOK, resp)
 	}
 }
 
@@ -166,11 +236,30 @@ func GetCart(r *repo.CartRepo) gin.HandlerFunc {
 // @Param id path int true "Cart item ID"
 // @Success 204
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
 // @Router /cart/{id} [delete]
+// @Security BearerAuth
 func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, _ := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err := r.Remove(uint(id)); err != nil {
+		id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		id := uint(id64)
+
+		userID, err := getUserIDFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		if err := r.Remove(userID, id); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "item not found"})
+				return
+			}
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -183,12 +272,20 @@ func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
 // @Summary Clear all item in the cart
 // @Tags Cart
 // @Success 204
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /cart [delete]
+// @Security BearerAuth
 func ClearCart(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if r.ClearCart() != nil {
-			c.JSON(http.StatusInternalServerError, r.ClearCart().Error())
+		userID, err := getUserIDFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		if r.ClearCart(userID) != nil {
+			c.JSON(http.StatusInternalServerError, r.ClearCart(userID).Error())
 			return
 		}
 		c.Status(http.StatusNoContent)

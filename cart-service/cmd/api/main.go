@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -18,23 +19,29 @@ import (
 // @title Cart Service API
 // @version 1.0
 // @description Manage shopping cart items
-// @host localhost:8081
+// @host localhost:8083
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
+	godotenv.Load()
+
 	db, err := database.ConnectDB()
 	if err != nil {
 		panic("failed to connect to database...")
 	}
+
 	cartRepo := repo.NewCartRepo(db)
 	if err := db.AutoMigrate(&model.Cart{}); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
 
-	godotenv.Load()
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	r := gin.Default()
-	router.RegisterRoutes(r, cartRepo)
+	router.RegisterRoutes(r, cartRepo, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.Run(":8081")
+	r.Run(":8083")
 }

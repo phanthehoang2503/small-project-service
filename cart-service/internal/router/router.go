@@ -4,10 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/handler"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
+	"github.com/phanthehoang2503/small-project/pkg/auth"
 )
 
-func RegisterRoutes(r *gin.Engine, s *repo.CartRepo) {
+func RegisterRoutes(r *gin.Engine, s *repo.CartRepo, jwtSecret []byte) {
 	api := r.Group("/cart")
+	api.Use(auth.JWTMiddleware(jwtSecret))
 	{
 		api.POST("", handler.AddToCart(s))
 		api.GET("", handler.GetCart(s))

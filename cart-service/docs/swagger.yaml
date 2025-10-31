@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  internal_handler.AddToCartReq:
+  handler.AddToCartReq:
     properties:
       product_id:
         example: 2
@@ -9,7 +9,7 @@ definitions:
         example: 3
         type: integer
     type: object
-  internal_handler.CartResponse:
+  handler.CartResponse:
     properties:
       id:
         example: 1
@@ -27,12 +27,12 @@ definitions:
         example: 20000
         type: integer
     type: object
-  internal_handler.UpdateQuantityReq:
+  handler.UpdateQuantityReq:
     properties:
       quantity:
         type: integer
     type: object
-host: localhost:8081
+host: localhost:8083
 info:
   contact: {}
   description: Manage shopping cart items
@@ -44,12 +44,20 @@ paths:
       responses:
         "204":
           description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Clear all item in the cart
       tags:
       - Cart
@@ -61,14 +69,22 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_handler.CartResponse'
+              $ref: '#/definitions/handler.CartResponse'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: List cart items
       tags:
       - Cart
@@ -83,16 +99,22 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.AddToCartReq'
+          $ref: '#/definitions/handler.AddToCartReq'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler.CartResponse'
+            $ref: '#/definitions/handler.CartResponse'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -103,6 +125,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Add item to cart
       tags:
       - Cart
@@ -123,6 +147,20 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
       summary: Remove an item from cart
       tags:
       - Cart
@@ -140,16 +178,22 @@ paths:
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UpdateQuantityReq'
+          $ref: '#/definitions/handler.UpdateQuantityReq'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler.CartResponse'
+            $ref: '#/definitions/handler.CartResponse'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -166,7 +210,14 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Update cart item quantity
       tags:
       - Cart
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
