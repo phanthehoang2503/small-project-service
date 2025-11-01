@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,9 +32,9 @@ type cartItemResp struct {
 // CreateOrder godoc
 // @Summary Create a new order from the current cart
 // @Tags Orders
+// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param payload body model.Order true "Create order payload"
 // @Success 201 {object} model.Order
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -61,7 +62,8 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 			return
 		}
 
-		resp, err := http.Get(base)
+		cartURL := fmt.Sprintf("%s/cart?user_id=%d", base, userID)
+		resp, err := http.Get(cartURL)
 		if err != nil || resp.StatusCode != 200 { //<-- better then using to condition check from cart-service
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch cart"})
 			return
@@ -110,7 +112,7 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 		order.Total = total
 
-		if err := r.CreateOrder(order, userID); err != nil {
+		if err := r.CreateOrder(userID, order); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -125,30 +127,23 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 }
 
 // ListOrders godoc
-// @Summary List orders for a user
+// @Summary List orders for the authenticated user
 // @Tags Orders
+// @Security BearerAuth
 // @Produce json
-// @Param user_id query int true "User ID"
 // @Success 200 {array} model.Order
-// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /orders [get]
 func ListOrders(r *repo.OrderRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDStr := c.Query("user_id")
-		if userIDStr == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "missing user_id"})
-			return
-		}
-
-		userID64, err := strconv.ParseUint(userIDStr, 10, 64)
+		userID, err := util.GetUserID(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
 			return
 		}
-		uid := uint(userID64)
 
-		orders, err := r.ListByUser(uid)
+		orders, err := r.ListByUser(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -160,14 +155,22 @@ func ListOrders(r *repo.OrderRepo) gin.HandlerFunc {
 // GetOrder godoc
 // @Summary Get order details by id
 // @Tags Orders
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "Order ID"
 // @Success 200 {object} model.Order
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /orders/{id} [get]
 func GetOrder(r *repo.OrderRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID, err := util.GetUserID(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+			return
+		}
+
 		idStr := c.Param("id")
 		id64, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
@@ -176,7 +179,7 @@ func GetOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 		id := uint(id64)
 
-		order, err := r.GetByID(id)
+		order, err := r.GetByID(userID, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
@@ -189,7 +192,7 @@ func GetOrder(r *repo.OrderRepo) gin.HandlerFunc {
 	}
 }
 
-// allowed statuses (simple map)
+// allowed statuses ( simple map )
 var allowedStatuses = map[string]bool{
 	"Pending":   true,
 	"Paid":      true,
@@ -201,17 +204,25 @@ var allowedStatuses = map[string]bool{
 // UpdateOrderStatus godoc
 // @Summary Update an order's status
 // @Tags Orders
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path int true "Order ID"
 // @Param payload body UpdateStatusReq true "New status"
 // @Success 200 {object} model.Order
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /orders/{id}/status [put]
 func UpdateOrderStatus(r *repo.OrderRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userID, err := util.GetUserID(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+			return
+		}
+
 		idStr := c.Param("id")
 		id64, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
@@ -225,13 +236,12 @@ func UpdateOrderStatus(r *repo.OrderRepo) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
 		if !allowedStatuses[body.Status] {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 			return
 		}
 
-		updated, err := r.UpdateStatus(orderID, body.Status)
+		updated, err := r.UpdateStatus(userID, orderID, body.Status)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
@@ -240,7 +250,6 @@ func UpdateOrderStatus(r *repo.OrderRepo) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
 		c.JSON(http.StatusOK, updated)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/model"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/repo"
-	"github.com/phanthehoang2503/small-project/pkg/auth"
+	"github.com/phanthehoang2503/small-project/pkg/middleware"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -146,7 +146,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(h.jwtSecret, u.ID, int(h.jwtExp.Hours()))
+	token, err := middleware.GenerateToken(h.jwtSecret, u.ID, int(h.jwtExp.Hours()))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
 		return

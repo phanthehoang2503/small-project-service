@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -17,8 +18,11 @@ import (
 
 // @title Order Service API
 // @version 1.0
-// @description API documentation for the order microservice
+// @description Handles order creation, retrieval, and status updates.
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	godotenv.Load()
 	db, err := database.ConnectDB() //connect to db
@@ -29,11 +33,10 @@ func main() {
 	if err := db.AutoMigrate(&model.Order{}, &model.OrderItem{}); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
-
 	orderRepo := repo.NewOrderRepo(db)
-
+	secret := []byte(os.Getenv("JWT_SECRET"))
 	r := gin.Default()
-	router.RegisterRoutes(r, orderRepo)
+	router.RegisterRoutes(r, orderRepo, secret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8082")

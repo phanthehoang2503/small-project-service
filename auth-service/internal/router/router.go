@@ -3,7 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/handler"
-	"github.com/phanthehoang2503/small-project/pkg/auth"
+	"github.com/phanthehoang2503/small-project/pkg/middleware"
 )
 
 func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
@@ -15,7 +15,7 @@ func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
 
 	// Protected API group — reuse shared JWT middleware from pkg/auth
 	api := r.Group("/api")
-	api.Use(auth.JWTMiddleware(jwtSecret))
+	api.Use(middleware.JWTMiddleware(jwtSecret))
 	{
 		api.GET("/profile", func(c *gin.Context) {
 			uid, _ := c.Get("user_id")
