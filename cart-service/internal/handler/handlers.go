@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
+	"github.com/phanthehoang2503/small-project/pkg/util"
 	"gorm.io/gorm"
 )
 
@@ -42,24 +43,6 @@ type CartResponse struct {
 	Subtotal  int64 `json:"subtotal" example:"20000"`
 }
 
-// helper: get user_id from gin.Context (handles uint or float64)
-func getUserIDFromContext(c *gin.Context) (uint, error) {
-	val, ok := c.Get("user_id")
-	if !ok {
-		return 0, errors.New("unauthorized")
-	}
-	switch v := val.(type) {
-	case uint:
-		return v, nil
-	case int:
-		return uint(v), nil
-	case float64:
-		return uint(v), nil
-	default:
-		return 0, errors.New("invalid user id type")
-	}
-}
-
 // AddToCart godoc
 // @Summary Add item to cart
 // @Description Add a product to the cart (can add amount of it if already in the cart). Call product-service to get stock and price
@@ -81,7 +64,7 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := getUserIDFromContext(c)
+		userID, err := util.GetUserID(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
@@ -166,7 +149,7 @@ func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := getUserIDFromContext(c)
+		userID, err := util.GetUserID(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
@@ -203,7 +186,7 @@ func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 // @Security BearerAuth
 func GetCart(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := getUserIDFromContext(c)
+		userID, err := util.GetUserID(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
@@ -249,7 +232,7 @@ func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
 		}
 		id := uint(id64)
 
-		userID, err := getUserIDFromContext(c)
+		userID, err := util.GetUserID(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
@@ -278,7 +261,7 @@ func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
 // @Security BearerAuth
 func ClearCart(r *repo.CartRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := getUserIDFromContext(c)
+		userID, err := util.GetUserID(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return

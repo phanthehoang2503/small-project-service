@@ -22,4 +22,5 @@ func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
 			c.JSON(200, gin.H{"user_id": uid})
 		})
 	}
+
 }

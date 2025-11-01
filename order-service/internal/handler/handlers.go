@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
+	"github.com/phanthehoang2503/small-project/pkg/util"
 	"gorm.io/gorm"
 )
 
@@ -35,10 +36,19 @@ type cartItemResp struct {
 // @Param payload body model.Order true "Create order payload"
 // @Success 201 {object} model.Order
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /orders [post]
 func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// get user from JWT in context
+		userID, err := util.GetUserID(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+			return
+		}
+
+		// input is not trusted for user; only accept body if you need extra fields (e.g., shipping)
 		var in model.Order
 		if err := c.ShouldBindJSON(&in); err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
@@ -46,6 +56,10 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 
 		base := os.Getenv("CART_SERVICE_URL")
+		if base == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "cart service url not configured"})
+			return
+		}
 
 		resp, err := http.Get(base)
 		if err != nil || resp.StatusCode != 200 { //<-- better then using to condition check from cart-service
@@ -72,30 +86,36 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 
 		order := &model.Order{
-			UserID: in.UserID,
+			UserID: userID,
 			Status: "Pending",
+			// If you want to carry other fields from `in` (shipping, notes), copy explicitly:
+			ShippingAddress: in.ShippingAddress,
 		}
 
+		// compute server-side subtotals and total (expect price in cents)
 		var total int64
 		for _, item := range cartItems {
+			if item.Quantity <= 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid item quantity"})
+				return
+			}
 			oi := model.OrderItem{
 				ProductID: item.ProductID,
 				Quantity:  item.Quantity,
 				Price:     item.Price,
-				Subtotal:  item.Subtotal,
 			}
-			oi.ID = 0
+			oi.Subtotal = int64(oi.Quantity) * oi.Price
 			order.Items = append(order.Items, oi)
-			total += item.Subtotal
+			total += oi.Subtotal
 		}
 		order.Total = total
 
-		if err := r.CreateOrder(order); err != nil {
+		if err := r.CreateOrder(order, userID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		created, err := r.GetByID(order.ID)
+		created, err := r.GetByID(userID, order.ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
