@@ -37,6 +37,7 @@ definitions:
       subtotal:
         type: integer
     type: object
+host: localhost:8083
 info:
   contact: {}
   description: Handles order creation, retrieval, and status updates.

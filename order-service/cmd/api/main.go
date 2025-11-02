@@ -20,6 +20,7 @@ import (
 // @version 1.0
 // @description Handles order creation, retrieval, and status updates.
 // @BasePath /
+// @host localhost:8083
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
@@ -39,5 +40,5 @@ func main() {
 	router.RegisterRoutes(r, orderRepo, secret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.Run(":8082")
+	r.Run(":8083")
 }
