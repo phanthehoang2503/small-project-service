@@ -73,7 +73,7 @@ D:.
 | Service | Description |
 |----------|-------------|
 | **Auth Service** | Handles user registration, login, and JWT token generation |
-| **Product Service** | Manages products and their CRUD operations |
+| *****Product*** Service** | Manages products and their CRUD operations |
 | **Cart Service** | Handles shopping cart creation, updates, and item management |
 | **Order Service** | Processes orders and connects with cart + user data |
 
@@ -123,32 +123,33 @@ docker compose up --build
 cd product-service
 air
 ```
-Then visit Swagger UI for each service:
-- Product: http://localhost:8081/swagger/index.html
-- Cart: http://localhost:8082/swagger/index.html
-- Order: http://localhost:8083/swagger/index.html
-- Auth: http://localhost:8084/swagger/index.html
+Then visit Swagger UI for each service:  
+  
+***Product***: http://localhost:8081/swagger/index.html  
+***Cart***: http://localhost:8082/swagger/index.html  
+***Order***: http://localhost:8083/swagger/index.html  
+***Auth***: http://localhost:8084/swagger/index.html
 
 ---
 
 ## Note
 
-> This repository is for **learning purpose only**.  
-> The goal is to understand architecture and clean service design.
+This repository is for **learning purpose only**.  
+The goal is to understand architecture and clean service design.
 
 ---
 
 ## Author
 
 **Thế Hoàng or you can call me *Josh*. Why? I just love that name and it short**  
-- CS Student | Backend Developer in training  
-- Learning Go, microservices, Java and JS
+CS Student | Backend Developer in training  
+Learning Go, microservices, Java and JS
 
 ---
 
 # Vietnamese
 
-# Dự án Thực Hành Microservices E-Commerce bằng Go
+# Xây dựng Microservices E-Commerce với Go
 
 Dự án này là **backend microservices chỉ dùng cho mục đích học tập**, được xây dựng bằng **Go**, **Gin**, **GORM**, và **Docker**.  
 Không dành cho môi trường production — mục tiêu là để học cách các hệ thống thực tế được tổ chức, giao tiếp và mở rộng.
@@ -158,7 +159,7 @@ Không dành cho môi trường production — mục tiêu là để học cách
 ## Tổng quan
 
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.  
-Tất cả giao tiếp với nhau qua REST (sau này có thể thêm message queue).
+Tất cả giao tiếp với nhau qua REST (sau này có thể thêm message queue).  
 Cấu trúc file: đầu trang
 
 ---
@@ -219,23 +220,23 @@ cd auth-service
 air
 ```
 
-Truy cập Swagger UI của từng service:
-- Auth: http://localhost:8081/swagger/index.html  
-- Product: http://localhost:8082/swagger/index.html  
-- Cart: http://localhost:8083/swagger/index.html  
-- Order: http://localhost:8084/swagger/index.html  
+Truy cập Swagger UI của từng service:  
+***Auth***: http://localhost:8081/swagger/index.html  
+***Product***: http://localhost:8082/swagger/index.html  
+***Cart***: http://localhost:8083/swagger/index.html  
+***Order***: http://localhost:8084/swagger/index.html  
 
 ---
 
 ## Ghi chú
 
-> Dự án này chỉ phục vụ **mục đích học tập**.  
-> Mục tiêu là hiểu về kiến trúc và thiết kế service sạch.
+Dự án này chỉ phục vụ **mục đích học tập**.  
+Mục tiêu là hiểu về kiến trúc và thiết kế service sạch.
 
 ---
 
 ## Tác giả
 
 **Thế Hoàng**  
-- Sinh viên KHMT | Đang học backend development  
-- đang học Golang, microservices, Java, JS.
+Sinh viên KHMT | Đang học backend development  
+Đang học Golang, microservices, Java, JS.
