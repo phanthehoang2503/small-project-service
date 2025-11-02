@@ -159,6 +159,7 @@ Không dành cho môi trường production — mục tiêu là để học cách
 
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.  
 Tất cả giao tiếp với nhau qua REST (sau này có thể thêm message queue).
+Cấu trúc file: đầu trang
 
 ---
 
