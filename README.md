@@ -134,15 +134,17 @@ Then visit Swagger UI for each service:
 ## Note
 
 > This repository is for **learning purpose only**.  
-> The goal is to understand architecture and clean service design, not production-grade performance or security.
+> The goal is to understand architecture and clean service design.
 
 ---
 
 ## Author
 
-**Hoang (phanthehoang2503)**  
+**Thế Hoàng or you can call me *Josh*. Why? I just love that name and it short**  
 - CS Student | Backend Developer in training  
-- Learning Go, microservices, and AI automation
+- Learning Go, microservices, Java and JS
+
+---
 
 # Vietnamese
 
@@ -233,6 +235,6 @@ Truy cập Swagger UI của từng service:
 
 ## Tác giả
 
-**Hoàng (phanthehoang2503)**  
-💻 Sinh viên KHMT | Đang học backend development  
-🚀 Học Go, microservices và tự động hóa AI
+**Thế Hoàng**  
+- Sinh viên KHMT | Đang học backend development  
+- đang học Golang, microservices, Java, JS.
