@@ -9,9 +9,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/phanthehoang2503/small-project/internal/util"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
-	"github.com/phanthehoang2503/small-project/pkg/util"
 	"gorm.io/gorm"
 )
 

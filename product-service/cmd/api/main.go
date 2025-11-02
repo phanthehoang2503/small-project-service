@@ -32,5 +32,5 @@ func main() {
 	router.RegisterRoutes(r, productRepo)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.Run(":8080")
+	r.Run(":8081")
 }

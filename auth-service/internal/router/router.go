@@ -3,7 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/handler"
-	"github.com/phanthehoang2503/small-project/pkg/middleware"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
 )
 
 func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
