@@ -130,6 +130,9 @@ Then visit Swagger UI for each service:
 ***Order***: http://localhost:8083/swagger/index.html  
 ***Auth***: http://localhost:8084/swagger/index.html
 
+# How to use 
+1. Open the Auth page then register and login to get the token.
+2. On cart or order page click on the lock icon and type: **Bearer <"token">** remove the (", <>) symbol. 
 ---
 
 ## Note
@@ -141,7 +144,7 @@ The goal is to understand architecture and clean service design.
 
 ## Author
 
-**Thế Hoàng or you can call me *Josh*. Why? I just love that name and it shorter**  
+**Thế Hoàng or you can call me *Josh*. Why? I just love that name and it shorter than my real name**  
 CS Student | Backend Developer in training  
 Learning Go, microservices, Java and JS.
 
@@ -155,7 +158,7 @@ Learning Go, microservices, Java and JS.
 
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.  
 Tất cả giao tiếp với nhau qua REST (sau này có thể thêm message queue).  
-Cấu trúc file: đầu trang
+Cấu trúc file: [đầu trang](#overview)
 
 ---
 
@@ -219,6 +222,7 @@ Truy cập Swagger UI của từng service:
 ***Cart***: http://localhost:8082/swagger/index.html  
 ***Order***: http://localhost:8083/swagger/index.html  
 ***Auth***: http://localhost:8084/swagger/index.html  
+[Cách sử dụng](#how-to-use)
 
 ---
 
