@@ -141,20 +141,15 @@ The goal is to understand architecture and clean service design.
 
 ## Author
 
-**Thế Hoàng or you can call me *Josh*. Why? I just love that name and it short**  
+**Thế Hoàng or you can call me *Josh*. Why? I just love that name and it shorter**  
 CS Student | Backend Developer in training  
-Learning Go, microservices, Java and JS
+Learning Go, microservices, Java and JS.
 
 ---
 
 # Vietnamese
 
 # Xây dựng Microservices E-Commerce với Go
-
-Dự án này là **backend microservices chỉ dùng cho mục đích học tập**, được xây dựng bằng **Go**, **Gin**, **GORM**, và **Docker**.  
-Không dành cho môi trường production — mục tiêu là để học cách các hệ thống thực tế được tổ chức, giao tiếp và mở rộng.
-
----
 
 ## Tổng quan
 
@@ -179,11 +174,10 @@ Cấu trúc file: đầu trang
 
 | Service | Kiến thức sẽ học được |
 |----------|----------------------|
-| **Inventory Service** | Quản lý tồn kho, xử lý song song và cập nhật nguyên tử |
+| **Inventory Service** | Quản lý tồn kho |
 | **Payment Service** | Mô phỏng thanh toán, tích hợp API ngoài |
 | **Notification Service** | Gửi thông báo bất đồng bộ (email/SMS giả lập) |
 | **API Gateway** | Tạo điểm truy cập chung và xác thực tập trung |
-| **Review Service** | Kết nối dữ liệu giữa các service (User + Product) |
 
 ---
 
@@ -193,7 +187,7 @@ Cấu trúc file: đầu trang
 - Dùng **Swagger** để tạo tài liệu API  
 - Quản lý nhiều service với **Docker Compose**  
 - Tìm hiểu **xác thực, giao tiếp giữa các service, và clean architecture**  
-- Sau này thử nghiệm với **message queue (RabbitMQ/Kafka)** và **cache (Redis)**  
+- Thử nghiệm với **message queue (RabbitMQ/Kafka)** và **cache (Redis)**  
 
 ---
 
@@ -215,16 +209,16 @@ Cấu trúc file: đầu trang
 # Chạy tất cả service
 docker compose up --build
 
-# Chạy 1 service riêng
+# Chạy từng service riêng lẻ
 cd auth-service
 air
 ```
 
 Truy cập Swagger UI của từng service:  
-***Auth***: http://localhost:8081/swagger/index.html  
-***Product***: http://localhost:8082/swagger/index.html  
-***Cart***: http://localhost:8083/swagger/index.html  
-***Order***: http://localhost:8084/swagger/index.html  
+***Product***: http://localhost:8081/swagger/index.html  
+***Cart***: http://localhost:8082/swagger/index.html  
+***Order***: http://localhost:8083/swagger/index.html  
+***Auth***: http://localhost:8084/swagger/index.html  
 
 ---
 
@@ -238,5 +232,5 @@ Mục tiêu là hiểu về kiến trúc và thiết kế service sạch.
 ## Tác giả
 
 **Thế Hoàng**  
-Sinh viên KHMT | Đang học backend development  
+Sinh viên KHMT | Đang học mảng backend
 Đang học Golang, microservices, Java, JS.
