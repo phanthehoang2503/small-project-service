@@ -68,7 +68,7 @@ D:.
 
 ---
 
-## Current Services
+### Current services
 
 | Service | Description |
 |----------|-------------|
@@ -77,31 +77,18 @@ D:.
 | **Cart Service** | Handles shopping cart creation, updates, and item management |
 | **Order Service** | Processes orders and connects with cart + user data |
 
----
 
-## Planned Additions
+### Learning goals
 
-| Planned Service | What You'll Learn |
-|------------------|------------------|
-| **Inventory Service** | Stock tracking, concurrency, and atomic updates |
-| **Payment Service** | Simulated payment flow & external API integration |
-| **Notification Service** | Async message processing (email/SMS mock) |
-| **API Gateway** | Unified entrypoint & centralized auth validation |
-| **Review Service** | Cross-service data relations (User + Product) |
+Practice **Go microservice structure** (using `internal/`, `cmd/`, `repo/`, `handler/`, etc.)
+Use **Swagger** for API documentation
+Manage multiple services via **Docker Compose**
+Explore **auth, inter-service communication, and clean architecture**
+Eventually experiment with **async messaging** (RabbitMQ/Kafka) and **caching** (Redis)
 
 ---
 
-## Learning Goals
-
-- Practice **Go microservice structure** (using `internal/`, `cmd/`, `repo/`, `handler/`, etc.)
-- Use **Swagger** for API documentation
-- Manage multiple services via **Docker Compose**
-- Explore **auth, inter-service communication, and clean architecture**
-- Eventually experiment with **async messaging** (RabbitMQ/Kafka) and **caching** (Redis)
-
----
-
-## Tech Stack
+### Tech stack
 
 - **Language:** Go
 - **Framework:** Gin
@@ -113,7 +100,7 @@ D:.
 
 ---
 
-## Setup
+### Setup
 
 ```bash
 # Run all services
@@ -130,17 +117,10 @@ Then visit Swagger UI for each service:
 ***Order***: http://localhost:8083/swagger/index.html  
 ***Auth***: http://localhost:8084/swagger/index.html
 
-# How to use 
+### How to use 
 1. Open the Auth page then register and login to get the token.
 2. On cart or order page click on the lock icon and type: **Bearer <"token">** remove the (", <>) symbol. 
----
 
-## Note
-
-This repository is for **learning purpose only**.  
-The goal is to understand architecture and clean service design.
-
----
 
 ## Author
 
@@ -148,13 +128,12 @@ The goal is to understand architecture and clean service design.
 CS Student | Backend Developer in training  
 Learning Go, microservices, Java and JS.
 
----
 
-# Vietnamese
+# Vietnamese  
 
-# Xây dựng Microservices E-Commerce với Go
+## Xây dựng Microservices E-Commerce với Go  
 
-## Tổng quan
+### Tổng quan
 
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.  
 Tất cả giao tiếp với nhau qua REST (sau này có thể thêm message queue).  
@@ -162,7 +141,7 @@ Cấu trúc file: [đầu trang](#overview)
 
 ---
 
-## Các Service Hiện Có
+### Các service hiện có
 
 | Service | Mô tả |
 |----------|-------|
@@ -173,7 +152,7 @@ Cấu trúc file: [đầu trang](#overview)
 
 ---
 
-## Dự Kiến Thêm Trong Tương Lai
+### Dự kiến sẽ thêm vào
 
 | Service | Kiến thức sẽ học được |
 |----------|----------------------|
@@ -184,17 +163,17 @@ Cấu trúc file: [đầu trang](#overview)
 
 ---
 
-## Mục Tiêu Học Tập
+### Các kiến thức học được
 
-- Thực hành **cấu trúc microservice trong Go** (`internal/`, `cmd/`, `repo/`, `handler/`, v.v.)  
-- Dùng **Swagger** để tạo tài liệu API  
-- Quản lý nhiều service với **Docker Compose**  
-- Tìm hiểu **xác thực, giao tiếp giữa các service, và clean architecture**  
-- Thử nghiệm với **message queue (RabbitMQ/Kafka)** và **cache (Redis)**  
+Thực hành **cấu trúc microservice trong Go** (`internal/`, `cmd/`, `repo/`, `handler/`, v.v.)  
+Dùng **Swagger** để tạo tài liệu API  
+Quản lý nhiều service với **Docker Compose**  
+Tìm hiểu **xác thực, giao tiếp giữa các service, và clean architecture**  
+Thử nghiệm với **message queue (RabbitMQ/Kafka)** và **cache (Redis)**  
 
 ---
 
-## Công Nghệ Sử Dụng
+## Công nghệ sử dụng
 
 - **Ngôn ngữ:** Go  
 - **Framework:** Gin  
@@ -206,7 +185,7 @@ Cấu trúc file: [đầu trang](#overview)
 
 ---
 
-## Cách Chạy
+## Cách chạy
 
 ```bash
 # Chạy tất cả service
@@ -224,17 +203,3 @@ Truy cập Swagger UI của từng service:
 ***Auth***: http://localhost:8084/swagger/index.html  
 [Cách sử dụng](#how-to-use)
 
----
-
-## Ghi chú
-
-Dự án này chỉ phục vụ **mục đích học tập**.  
-Mục tiêu là hiểu về kiến trúc và thiết kế service sạch.
-
----
-
-## Tác giả
-
-**Thế Hoàng**  
-Sinh viên KHMT | Đang học mảng backend
-Đang học Golang, microservices, Java, JS.

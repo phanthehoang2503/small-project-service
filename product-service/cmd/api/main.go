@@ -16,7 +16,7 @@ import (
 // @title Product Service API
 // @version 1.0
 // @description Manage product items
-// @host localhost:8080
+// @host localhost:8081
 // @BasePath /
 func main() {
 	db, err := database.ConnectDB() //connect to db

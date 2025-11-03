@@ -32,7 +32,7 @@ definitions:
       quantity:
         type: integer
     type: object
-host: localhost:8083
+host: localhost:8082
 info:
   contact: {}
   description: Manage shopping cart items

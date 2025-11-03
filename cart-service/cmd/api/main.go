@@ -19,7 +19,7 @@ import (
 // @title Cart Service API
 // @version 1.0
 // @description Manage shopping cart items
-// @host localhost:8083
+// @host localhost:8082
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -43,5 +43,5 @@ func main() {
 	router.RegisterRoutes(r, cartRepo, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.Run(":8083")
+	r.Run(":8082")
 }

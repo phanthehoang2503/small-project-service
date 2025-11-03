@@ -78,6 +78,7 @@ func CreateProducts(r *repo.Database) gin.HandlerFunc {
 		created, err := r.Create(in)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
+			return
 		}
 		c.JSON(http.StatusCreated, created) // status created = 201
 	}
@@ -135,10 +136,11 @@ func DeleteProducts(r *repo.Database) gin.HandlerFunc {
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"}) // status bad request = 400
+			return
 		}
 
 		if r.Delete(id) != nil { //Delete return true if deleted an id and vice versa
-			c.JSON(404, r.Delete(id).Error())
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 

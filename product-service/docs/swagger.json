@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost:8081",
     "basePath": "/",
     "paths": {
         "/products": {
@@ -25,7 +25,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                                "$ref": "#/definitions/model.Product"
                             }
                         }
                     },
@@ -59,7 +59,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     }
                 ],
@@ -67,7 +67,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -114,7 +114,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -163,7 +163,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     }
                 ],
@@ -171,7 +171,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -245,18 +245,9 @@
         }
     },
     "definitions": {
-        "github_com_phanthehoang2503_small-project_product-service_internal_model.Product": {
+        "model.Product": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -265,21 +256,6 @@
                 },
                 "stock": {
                     "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "gorm.DeletedAt": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if Time is not NULL",
-                    "type": "boolean"
                 }
             }
         }

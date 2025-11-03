@@ -5,8 +5,8 @@ import (
 )
 
 type Product struct {
-	gorm.Model
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
-	Stock int    `json:"stock"`
+	gorm.Model `swaggerignore:"true"`
+	Name       string `json:"name"`
+	Price      int64  `json:"price"`
+	Stock      int    `json:"stock"`
 }

@@ -31,7 +31,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                                "$ref": "#/definitions/model.Product"
                             }
                         }
                     },
@@ -65,7 +65,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     }
                 ],
@@ -73,7 +73,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -120,7 +120,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -169,7 +169,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     }
                 ],
@@ -177,7 +177,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_phanthehoang2503_small-project_product-service_internal_model.Product"
+                            "$ref": "#/definitions/model.Product"
                         }
                     },
                     "400": {
@@ -251,18 +251,9 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_phanthehoang2503_small-project_product-service_internal_model.Product": {
+        "model.Product": {
             "type": "object",
             "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "$ref": "#/definitions/gorm.DeletedAt"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -271,21 +262,6 @@ const docTemplate = `{
                 },
                 "stock": {
                     "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "gorm.DeletedAt": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if Time is not NULL",
-                    "type": "boolean"
                 }
             }
         }
@@ -295,7 +271,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:8081",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Product Service API",
