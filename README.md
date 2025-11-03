@@ -65,6 +65,10 @@ D:.
     │   └───router
     └───tmp
 ```
+[Product service](product-service/README.md#product-service)  
+[Cart service](cart-service/README.md#cart-service)  
+[Order service](order-service/README.md#order-service)  
+[Auth service](auth-service/README.md#auth-service)  
 
 ---
 
@@ -84,7 +88,6 @@ Practice **Go microservice structure** (using `internal/`, `cmd/`, `repo/`, `han
 Use **Swagger** for API documentation
 Manage multiple services via **Docker Compose**
 Explore **auth, inter-service communication, and clean architecture**
-Eventually experiment with **async messaging** (RabbitMQ/Kafka) and **caching** (Redis)
 
 ---
 
@@ -154,12 +157,12 @@ Cấu trúc file: [đầu trang](#overview)
 
 ### Dự kiến sẽ thêm vào
 
-| Service | Kiến thức sẽ học được |
+| Service | Mô tả |
 |----------|----------------------|
 | **Inventory Service** | Quản lý tồn kho |
-| **Payment Service** | Mô phỏng thanh toán, tích hợp API ngoài |
-| **Notification Service** | Gửi thông báo bất đồng bộ (email/SMS giả lập) |
-| **API Gateway** | Tạo điểm truy cập chung và xác thực tập trung |
+| **Payment Service** | Mô phỏng thanh toán |
+| **Notification Service** | Gửi thông báo(email/SMS)|
+| **API Gateway** | Tạo điểm truy cập và xác thực|
 
 ---
 
@@ -169,7 +172,6 @@ Thực hành **cấu trúc microservice trong Go** (`internal/`, `cmd/`, `repo/`
 Dùng **Swagger** để tạo tài liệu API  
 Quản lý nhiều service với **Docker Compose**  
 Tìm hiểu **xác thực, giao tiếp giữa các service, và clean architecture**  
-Thử nghiệm với **message queue (RabbitMQ/Kafka)** và **cache (Redis)**  
 
 ---
 
