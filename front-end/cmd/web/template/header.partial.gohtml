@@ -1,0 +1,11 @@
+{{define "header"}}
+<header>
+  <h2>Basic go web</h2>
+  <nav>
+    <a href="/">Home</a> |
+    <a href="/login">Login</a> |
+    <a href="/register">Register</a> |
+    {{if .User}} <a href="/logout">Logout</a> {{end}}
+  </nav>
+</header>
+{{end}}

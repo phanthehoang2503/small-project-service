@@ -1,0 +1,14 @@
+{{define "content"}}
+<h3>Register</h3>
+<div class="card">
+  <form action="/do-register" method="post">
+    <label>Email<br><input name="email" required style="width:100%"></label><br>
+    <label>Password<br><input name="password" type="password" required style="width:100%"></label><br>
+    <div style="margin-top:10px;">
+      <button class="btn" type="submit">Register</button>
+      <a href="/login" style="margin-left:8px;">Login</a>
+    </div>
+  </form>
+</div>
+{{end}}
+{{template "base" .}}
