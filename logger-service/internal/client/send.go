@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/phanthehoang2503/logger-service/internal/model"
+	"github.com/phanthehoang2503/small-project/logger-service/internal/model"
 )
 
 var httpClient = &http.Client{Timeout: 5 * time.Second}

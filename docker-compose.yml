@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   db:
     image: postgres:16
@@ -6,21 +8,29 @@ services:
       POSTGRES_PASSWORD: 25032004
       POSTGRES_DB: mydb
     volumes:
-    - db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     ports:
-    - "5432:5432"
-    networks:
-    - backend
+      - "5432:5432"
+    networks: [backend]
 
-    
-  order-service:
+  rabbitmq:
+    image: rabbitmq:4.2-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672" # optional web UI if you want to debug
+    volumes:
+      - ./db-data/rabbitmq:/var/lib/rabbitmq
+    networks: [backend]
+
+  logger-service:
     build:
       context: .
-      dockerfile: ./order-service/Dockerfile
+      dockerfile: ./logger-service/Dockerfile
     env_file: .env
-    depends_on: [db]
+    depends_on:
+      - rabbitmq
     ports:
-      - "8082:8082"
+      - "8085:8085"
     networks: [backend]
 
   product-service:
@@ -28,9 +38,22 @@ services:
       context: .
       dockerfile: ./product-service/Dockerfile
     env_file: .env
-    depends_on: [db]
+    depends_on:
+      - db
     ports:
       - "8081:8081"
+    networks: [backend]
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./order-service/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8082:8082"
     networks: [backend]
 
   cart-service:
@@ -38,18 +61,31 @@ services:
       context: .
       dockerfile: ./cart-service/Dockerfile
     env_file: .env
-    depends_on: [db]
+    depends_on:
+      - db
+      - rabbitmq
     ports:
       - "8083:8083"
     networks: [backend]
+
   auth-service:
     build:
       context: .
       dockerfile: ./auth-service/Dockerfile
     env_file: .env
-    depends_on: [db]
+    depends_on:
+      - db
+      - rabbitmq
+      - logger-service
     ports:
       - "8084:8084"
+    networks: [backend]
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks: [backend]
 
 volumes:

@@ -77,7 +77,7 @@ D:.
 | Service | Description |
 |----------|-------------|
 | **Auth Service** | Handles user registration, login, and JWT token generation |
-| *****Product*** Service** | Manages products and their CRUD operations |
+| **Product Service** | Manages products and their CRUD operations |
 | **Cart Service** | Handles shopping cart creation, updates, and item management |
 | **Order Service** | Processes orders and connects with cart + user data |
 

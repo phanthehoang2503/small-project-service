@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var DB *gorm.DB
+
 func ConnectDB() (*gorm.DB, error) {
 	godotenv.Load()
 
@@ -26,6 +28,7 @@ func ConnectDB() (*gorm.DB, error) {
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			fmt.Println("connected to database")
+			DB = db
 			return db, nil
 		}
 
@@ -34,4 +37,15 @@ func ConnectDB() (*gorm.DB, error) {
 	}
 
 	return nil, fmt.Errorf("failed to connect to database after retries: %w", err)
+}
+
+func CloseDB() error {
+	if DB == nil {
+		return nil
+	}
+	sqlDB, err := DB.DB() // extract *sql.DB
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
 }

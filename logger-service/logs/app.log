@@ -1,3 +1,3 @@
 {"level":"info","service":"logger-service","trace_id":"abc123","service":"auth-service","level":"info","timestamp":"2025-11-07T07:27:02Z","user_id":42,"time":"2025-11-07T14:27:02+07:00","message":"user logged in"}
 {"level":"info","service":"logger-service","trace_id":"abc41","service":"auth-service","level":"info","timestamp":"2025-11-07T07:27:34Z","user_id":1,"time":"2025-11-07T14:27:34+07:00","message":"user logged in"}
-{"level":"info","service":"logger-service","trace_id":"","service":"auth-service","level":"info","timestamp":"2025-11-07T08:08:43Z","email":"string3@gmail.com","user_id":4,"username":"string4","time":"2025-11-07T15:08:43+07:00","message":"login: success"}
+

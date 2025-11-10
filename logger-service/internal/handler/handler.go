@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/phanthehoang2503/logger-service/internal/model"
+	"github.com/phanthehoang2503/small-project/logger-service/internal/model"
+
 	"github.com/rs/zerolog"
 )
 
