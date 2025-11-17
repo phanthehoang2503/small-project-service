@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/internal/event"
@@ -19,12 +20,20 @@ func main() {
 	}
 
 	go func() {
-		exchange := event.ExchangeLogs
+		exchange := event.ExchangeLogs // "logs_exchange"
 		queue := "logger_queue"
 		bindKey := "#"
 
-		if err := logger.StartConsumer(amqpURL, exchange, queue, bindKey); err != nil {
-			zlog.Error().Err(err).Msg("Failed to start RabbitMQ consumer")
+		for {
+			zlog.Info().Msg("logger-service: starting RabbitMQ consumer...")
+			if err := logger.StartConsumer(amqpURL, exchange, queue, bindKey); err != nil {
+				zlog.Error().Err(err).Msg("logger-service: consumer error, retrying in 3s")
+				time.Sleep(3 * time.Second)
+				continue
+			}
+
+			zlog.Warn().Msg("logger-service: consumer exited unexpectedly, restarting in 3s")
+			time.Sleep(3 * time.Second)
 		}
 	}()
 
