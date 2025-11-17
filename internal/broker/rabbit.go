@@ -6,27 +6,21 @@ import (
 	"log"
 	"time"
 
-	"github.com/phanthehoang2503/small-project/internal/message"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Broker struct {
-	conn     *amqp.Connection
-	channel  *amqp.Channel
-	exchange string
+	conn    *amqp.Connection
+	channel *amqp.Channel
 }
 
-// Global broker for convenience (so callers can just call broker.Publish(...))
+// Global broker
 var Global *Broker
 
-// InitRabbit creates a connection/channel and declares the exchange.
-// It DOES NOT close the connection/channel — caller should call Close() on the returned Broker when shutting down.
-func InitRabbit(url, exchange string) (*Broker, error) {
+// Init sets up connection + channel.
+func Init(url string) (*Broker, error) {
 	if url == "" {
 		return nil, errors.New("rabbitmq url required")
-	}
-	if exchange == "" {
-		return nil, errors.New("exchange name required")
 	}
 
 	conn, err := amqp.Dial(url)
@@ -40,47 +34,55 @@ func InitRabbit(url, exchange string) (*Broker, error) {
 		return nil, err
 	}
 
-	// declare exchange using provided name
-	if err := ch.ExchangeDeclare(
-		exchange, // name (use parameter)
-		"topic",  // type -- topic is usually more flexible than fanout
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // args
-	); err != nil {
-		_ = ch.Close()
-		_ = conn.Close()
-		return nil, err
-	}
-
 	b := &Broker{
-		conn:     conn,
-		channel:  ch,
-		exchange: exchange,
+		conn:    conn,
+		channel: ch,
 	}
 
-	// set package-global for convenience
 	Global = b
 
-	log.Println("RabbitMQ connected, exchange:", exchange)
+	log.Println("RabbitMQ connected")
 	return b, nil
 }
 
-// Publish publishes an event to the exchange using the provided routing key.
-func (b *Broker) Publish(routingKey string, event message.LogEvent) error {
+// DeclareTopicExchange is a helper to declare a durable topic exchange.
+func (b *Broker) DeclareTopicExchange(name string) error {
 	if b == nil || b.channel == nil {
 		return errors.New("rabbitmq broker not initialized")
 	}
+	if name == "" {
+		return errors.New("exchange name required")
+	}
 
-	body, err := json.Marshal(event)
+	return b.channel.ExchangeDeclare(
+		name,
+		"topic",
+		true,  // durable
+		false, // autoDelete
+		false, // internal
+		false, // noWait
+		nil,   // args
+	)
+}
+
+func (b *Broker) PublishJSON(exchange, routingKey string, payload any) error {
+	if b == nil || b.channel == nil {
+		return errors.New("rabbitmq broker not initialized")
+	}
+	if exchange == "" {
+		return errors.New("exchange name required")
+	}
+	if routingKey == "" {
+		return errors.New("routing key required")
+	}
+
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
 	return b.channel.Publish(
-		b.exchange,
+		exchange,
 		routingKey,
 		false,
 		false,
@@ -92,15 +94,34 @@ func (b *Broker) Publish(routingKey string, event message.LogEvent) error {
 	)
 }
 
-// Package-level wrapper that uses Global broker
-func Publish(routingKey string, event message.LogEvent) error {
+func DeclareTopicExchange(exchange string) error {
 	if Global == nil {
 		return errors.New("global broker not initialized")
 	}
-	return Global.Publish(routingKey, event)
+	return Global.DeclareTopicExchange(exchange)
 }
 
-// Close closes the channel and connection. Call this at shutdown.
+func PublishJSON(exchange, routingKey string, payload any) error {
+	if Global == nil {
+		return errors.New("global broker not initialized")
+	}
+	return Global.PublishJSON(exchange, routingKey, payload)
+}
+
+func (b *Broker) Channel() *amqp.Channel {
+	if b == nil {
+		return nil
+	}
+	return b.channel
+}
+
+func GlobalChannel() *amqp.Channel {
+	if Global == nil {
+		return nil
+	}
+	return Global.channel
+}
+
 func (b *Broker) Close() {
 	if b == nil {
 		return

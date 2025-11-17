@@ -5,43 +5,41 @@ import (
 	"time"
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
+	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/message"
 )
 
-var (
-	service = "unknown-service"
-)
+var service = "unknown-service"
 
-// SetConfig lets each service tell the logger which service it is
-func SetConfig(_ string, svc string) {
-	if svc != "" {
-		service = svc
+func SetService(name string) {
+	if name != "" {
+		service = name
 	}
 }
 
-// send publishes log entries to RabbitMQ via the broker package
-func send(ctx context.Context, level, msg, traceID string, fields map[string]interface{}) {
+func send(_ context.Context, level, msg string) {
 	ev := message.LogEvent{
-		Service: service,
 		Level:   level,
+		Service: service,
 		Message: msg,
 		Time:    time.Now().Format(time.RFC3339),
-		Meta: map[string]interface{}{
-			"trace_id": traceID,
-			"fields":   fields,
-		},
 	}
 
-	broker.Publish(service+"."+level, ev)
+	var routingKey string
+	switch level {
+	case "info":
+		routingKey = event.RoutingKeyLogInfo
+	case "warn":
+		routingKey = event.RoutingKeyLogWarn
+	case "error":
+		routingKey = event.RoutingKeyLogError
+	default:
+		routingKey = "log." + level
+	}
+
+	_ = broker.PublishJSON(event.ExchangeLogs, routingKey, ev)
 }
 
-// sugar wrappers
-func Info(ctx context.Context, msg, traceID string, fields map[string]interface{}) {
-	send(ctx, "info", msg, traceID, fields)
-}
-func Warn(ctx context.Context, msg, traceID string, fields map[string]interface{}) {
-	send(ctx, "warn", msg, traceID, fields)
-}
-func Error(ctx context.Context, msg, traceID string, fields map[string]interface{}) {
-	send(ctx, "error", msg, traceID, fields)
-}
+func Info(ctx context.Context, msg string)  { send(ctx, "info", msg) }
+func Warn(ctx context.Context, msg string)  { send(ctx, "warn", msg) }
+func Error(ctx context.Context, msg string) { send(ctx, "error", msg) }

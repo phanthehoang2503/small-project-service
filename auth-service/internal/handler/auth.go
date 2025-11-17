@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -8,7 +9,7 @@ import (
 
 	"github.com/phanthehoang2503/small-project/auth-service/internal/model"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/repo"
-	loggerclient "github.com/phanthehoang2503/small-project/internal/logger"
+	logger "github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -83,51 +84,37 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	req := registerReq{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		loggerclient.Warn(ctx, "register: bad payload", traceID, map[string]interface{}{
-			"error": err.Error(),
-		})
+		logger.Warn(ctx, fmt.Sprintf("register: bad payload (trace_id=%s, err=%v)", traceID, err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Check duplicate email
 	if u, err := h.Repo.GetUser(req.Email); err == nil && u != nil {
-		loggerclient.Info(ctx, "register: email already in use", traceID, map[string]interface{}{
-			"email": req.Email,
-		})
+		logger.Info(ctx, fmt.Sprintf("register: email already in use (trace_id=%s, email=%s)", traceID, req.Email))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email already in use"})
 		return
 	} else if err != nil && err != repo.ErrNotFound {
-		loggerclient.Error(ctx, "register: repo error checking email", traceID, map[string]interface{}{
-			"error": err.Error(),
-			"email": req.Email,
-		})
+		logger.Error(ctx, fmt.Sprintf("register: repo error checking email (trace_id=%s, email=%s, err=%v)", traceID, req.Email, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
 
 	// Check duplicate username
 	if u, err := h.Repo.GetUser(req.Username); err == nil && u != nil {
-		loggerclient.Info(ctx, "register: username already in use", traceID, map[string]interface{}{
-			"username": req.Username,
-		})
+		logger.Info(ctx, fmt.Sprintf("register: username already in use (trace_id=%s, username=%s)", traceID, req.Username))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username already in use"})
 		return
 	} else if err != nil && err != repo.ErrNotFound {
-		loggerclient.Error(ctx, "register: repo error checking username", traceID, map[string]interface{}{
-			"error":    err.Error(),
-			"username": req.Username,
-		})
+		logger.Error(ctx, fmt.Sprintf("register: repo error checking username (trace_id=%s, username=%s, err=%v)", traceID, req.Username, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
 
-	//hash the password
+	// hash the password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		loggerclient.Error(ctx, "register: failed to hash password", traceID, map[string]interface{}{
-			"error": err.Error(),
-		})
+		logger.Error(ctx, fmt.Sprintf("register: failed to hash password (trace_id=%s, err=%v)", traceID, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
@@ -139,20 +126,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.Repo.Create(user); err != nil {
-		loggerclient.Error(ctx, "register: failed to create user", traceID, map[string]interface{}{
-			"error":    err.Error(),
-			"email":    req.Email,
-			"username": req.Username,
-		})
+		logger.Error(ctx, fmt.Sprintf("register: failed to create user (trace_id=%s, email=%s, username=%s, err=%v)", traceID, req.Email, req.Username, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
 
-	loggerclient.Info(ctx, "register: user created", traceID, map[string]interface{}{
-		"id":       user.ID,
-		"email":    user.Email,
-		"username": user.Username,
-	})
+	logger.Info(ctx, fmt.Sprintf("register: user created (trace_id=%s, id=%d, email=%s, username=%s)", traceID, user.ID, user.Email, user.Username))
 
 	c.JSON(http.StatusCreated, gin.H{
 		"id":       user.ID,
@@ -178,47 +157,32 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	var req loginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		loggerclient.Warn(ctx, "login: bad payload", traceID, map[string]interface{}{
-			"error": err.Error(),
-		})
+		logger.Warn(ctx, fmt.Sprintf("login: bad payload (trace_id=%s, err=%v)", traceID, err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	u, err := h.Repo.GetUser(req.Login)
 	if err != nil {
-		loggerclient.Info(ctx, "login: user not found or repo error", traceID, map[string]interface{}{
-			"login": req.Login,
-			"error": err.Error(),
-		})
+		logger.Info(ctx, fmt.Sprintf("login: user not found or repo error (trace_id=%s, login=%s, err=%v)", traceID, req.Login, err))
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password)); err != nil {
-		loggerclient.Info(ctx, "login: invalid password", traceID, map[string]interface{}{
-			"user_id": u.ID,
-			"login":   req.Login,
-		})
+		logger.Info(ctx, fmt.Sprintf("login: invalid password (trace_id=%s, user_id=%d, login=%s)", traceID, u.ID, req.Login))
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	token, err := middleware.GenerateToken(h.jwtSecret, u.ID, int(h.jwtExp.Hours()))
 	if err != nil {
-		loggerclient.Error(ctx, "login: failed to create token", traceID, map[string]interface{}{
-			"error":   err.Error(),
-			"user_id": u.ID,
-		})
+		logger.Error(ctx, fmt.Sprintf("login: failed to create token (trace_id=%s, user_id=%d, err=%v)", traceID, u.ID, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
 		return
 	}
 
-	loggerclient.Info(ctx, "login: success", traceID, map[string]interface{}{
-		"user_id":  u.ID,
-		"email":    u.Email,
-		"username": u.Username,
-	})
+	logger.Info(ctx, fmt.Sprintf("login: success (trace_id=%s, user_id=%d, email=%s, username=%s)", traceID, u.ID, u.Email, u.Username))
 
 	c.JSON(http.StatusOK, gin.H{
 		"token":    token,

@@ -19,7 +19,7 @@ services:
       - "5672:5672"
       - "15672:15672" # optional web UI if you want to debug
     volumes:
-      - ./db-data/rabbitmq:/var/lib/rabbitmq
+      - rabbit-data:/var/lib/rabbitmq
     networks: [backend]
 
   logger-service:
