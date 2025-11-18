@@ -39,6 +39,12 @@ func ConnectRabbit() *broker.Broker {
 	if err := b.DeclareTopicExchange(event.ExchangeLogs); err != nil {
 		log.Fatalf("failed to declare logs exchange: %v", err)
 	}
+	if err := b.DeclareTopicExchange(event.ExchangeProduct); err != nil {
+		log.Fatalf("failed to declare product exchange: %v", err)
+	}
+	if err := b.DeclareTopicExchange(event.ExchangeOrder); err != nil {
+		log.Fatalf("failed to declare order exchange: %v", err)
+	}
 
 	log.Println("RabbitMQ ready in service")
 	return b

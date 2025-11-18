@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"errors"
+
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -14,37 +16,61 @@ func NewCartRepo(db *gorm.DB) *CartRepo {
 	return &CartRepo{DB: db}
 }
 
-func (d *CartRepo) AddNewItems(i *model.Cart) (model.Cart, error) { //i: item
+func (d *CartRepo) AddNewItems(i *model.Cart) (model.Cart, error) { // i: item
 	tx := d.DB.Begin()
 	if tx.Error != nil {
 		return model.Cart{}, tx.Error
 	}
 
+	// Optional safety for panic
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
 	var exist model.Cart
 	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("user_id = ? AND product_id = ?", i.UserID, i.ProductID).First(&exist).Error
-	if err == nil {
-		//item exist then update quantity
-		exist.Quantity += i.Quantity
-		exist.Subtotal += exist.Price * int64(exist.Quantity)
-		if err := tx.Save(&exist).Error; err != nil {
-			tx.Rollback() // -> rollback transaction
-			return model.Cart{}, err
-		}
+		Where("user_id = ? AND product_id = ?", i.UserID, i.ProductID).
+		First(&exist).Error
+
+	// unexpected DB error (not "not found")
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		tx.Rollback()
+		return model.Cart{}, err
 	}
 
-	if err == gorm.ErrRecordNotFound {
-		if err := tx.Create(&i).Error; err != nil {
+	//case 1: item does NOT exist → create new row
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		i.Subtotal = i.Price * int64(i.Quantity) // subtotal = price * qty
+
+		if err := tx.Create(i).Error; err != nil {
 			tx.Rollback()
 			return model.Cart{}, err
 		}
-		tx.Commit()
+
+		if err := tx.Commit().Error; err != nil {
+			return model.Cart{}, err
+		}
 		return *i, nil
 	}
 
-	tx.Rollback() //-> commit transaction
-	return *i, err
-} // v.01 change 1: added tx handle to handle added exist item into cart more robust --> update for handle user
+	//case 2: item exists → update qty + subtotal
+	exist.Quantity += i.Quantity
+	exist.Subtotal = exist.Price * int64(exist.Quantity)
+
+	if err := tx.Save(&exist).Error; err != nil {
+		tx.Rollback()
+		return model.Cart{}, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return model.Cart{}, err
+	}
+
+	return exist, nil
+}
 
 func (d *CartRepo) List(UserID uint) ([]model.Cart, error) {
 	var items []model.Cart

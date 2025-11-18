@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/internal/database"
+	"github.com/phanthehoang2503/small-project/internal/helper"
+	"github.com/phanthehoang2503/small-project/internal/logger"
 	_ "github.com/phanthehoang2503/small-project/product-service/docs"
 	"github.com/phanthehoang2503/small-project/product-service/internal/model"
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
@@ -19,14 +21,22 @@ import (
 // @host localhost:8081
 // @BasePath /
 func main() {
+	//DB
 	db, err := database.ConnectDB() //connect to db
 	if err != nil {
 		log.Fatal("failed to connect to database...")
 	}
-	productRepo := repo.NewRepo(db) //initial repository
+
 	if err := db.AutoMigrate(&model.Product{}); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
+	productRepo := repo.NewRepo(db)
+
+	// RabbitMQ + lging
+	b := helper.ConnectRabbit()
+	defer b.Close()
+
+	logger.SetService("product-service")
 
 	r := gin.Default()
 	router.RegisterRoutes(r, productRepo)

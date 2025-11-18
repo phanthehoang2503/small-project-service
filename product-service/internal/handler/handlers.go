@@ -5,6 +5,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/phanthehoang2503/small-project/internal/broker"
+	"github.com/phanthehoang2503/small-project/internal/event"
+	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/product-service/internal/model"
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
 )
@@ -69,18 +73,37 @@ func GetProducts(r *repo.Database) gin.HandlerFunc {
 // @Router /products [post]
 func CreateProducts(r *repo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var in model.Product
-		if err := c.ShouldBindJSON(&in); err != nil { //bind attempts to json body to in var
-			c.JSON(400, gin.H{"error": err.Error()}) // invalid json or mismatched fields
+		var in []model.Product
+
+		if err := c.ShouldBindJSON(&in); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		created, err := r.Create(in)
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
+		created := make([]model.Product, 0, len(in))
+
+		for _, p := range in {
+			newProd, err := r.Create(p)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			created = append(created, newProd)
+
+			// publish product.created for each
+			msg := message.ProductMessage{
+				ID:    newProd.ID,
+				Name:  newProd.Name,
+				Price: newProd.Price,
+				Stock: newProd.Stock,
+			}
+			if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductCreated, msg); err != nil {
+				logger.Error(c.Request.Context(), "failed to publish product.created: "+err.Error())
+			}
 		}
-		c.JSON(http.StatusCreated, created) // status created = 201
+
+		c.JSON(http.StatusCreated, created)
 	}
 }
 
@@ -117,6 +140,16 @@ func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 			return
 		}
 
+		msg := message.ProductMessage{
+			ID:    updated.ID,
+			Name:  updated.Name,
+			Price: updated.Price,
+			Stock: updated.Stock,
+		}
+		if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductUpdated, msg); err != nil {
+			logger.Error(c.Request.Context(), "failed to publish product.updated: "+err.Error())
+		}
+
 		c.JSON(200, updated)
 	}
 }
@@ -142,6 +175,13 @@ func DeleteProducts(r *repo.Database) gin.HandlerFunc {
 		if r.Delete(id) != nil { //Delete return true if deleted an id and vice versa
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
+		}
+
+		msg := message.ProductMessage{
+			ID: uint(id),
+		}
+		if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductDeleted, msg); err != nil {
+			logger.Error(c.Request.Context(), "failed to publish product.deleted: "+err.Error())
 		}
 
 		c.Status(http.StatusNoContent) // status no content = 204

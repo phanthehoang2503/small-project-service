@@ -7,14 +7,14 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/middleware"
 )
 
-func RegisterRoutes(r *gin.Engine, s *repo.CartRepo, jwtSecret []byte) {
+func RegisterRoutes(r *gin.Engine, cartRepo *repo.CartRepo, productRepo *repo.ProductRepo, jwtSecret []byte) {
 	api := r.Group("/cart")
 	api.Use(middleware.JWTMiddleware(jwtSecret))
 	{
-		api.POST("", handler.AddToCart(s))
-		api.GET("", handler.GetCart(s))
-		api.PUT("/:id", handler.UpdateQuantity(s))
-		api.DELETE("/:id", handler.RemoveItem(s))
-		api.DELETE("", handler.ClearCart(s))
+		api.POST("", handler.AddToCart(cartRepo, productRepo))
+		api.GET("", handler.GetCart(cartRepo))
+		api.PUT("/:id", handler.UpdateQuantity(cartRepo))
+		api.DELETE("/:id", handler.RemoveItem(cartRepo))
+		api.DELETE("", handler.ClearCart(cartRepo))
 	}
 }

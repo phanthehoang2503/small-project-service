@@ -1,11 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -25,13 +22,13 @@ type Product struct {
 
 // AddToCartReq struct used for request body
 type AddToCartReq struct {
-	ProductID uint `json:"product_id" example:"2"`
-	Quantity  int  `json:"quantity" example:"3"`
+	ProductID uint `json:"product_id" example:"2" binding:"required"`
+	Quantity  int  `json:"quantity" example:"3" binding:"required,min=1"`
 }
 
 // UpdateQuantityReq struct for update endpoint
 type UpdateQuantityReq struct {
-	Quantity int `json:"quantity" example: "2"`
+	Quantity int `json:"quantity" example:"2" binding:"required"`
 }
 
 // CartResponse struct is a public view of cart item
@@ -45,7 +42,7 @@ type CartResponse struct {
 
 // AddToCart godoc
 // @Summary Add item to cart
-// @Description Add a product to the cart (can add amount of it if already in the cart). Call product-service to get stock and price
+// @Description Add a product to the cart (can increase quantity if already in the cart).
 // @Tags Cart
 // @Accept json
 // @Produce json
@@ -56,7 +53,7 @@ type CartResponse struct {
 // @Failure 500 {object} map[string]string
 // @Router /cart [post]
 // @Security BearerAuth
-func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
+func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in AddToCartReq
 		if err := c.ShouldBindJSON(&in); err != nil {
@@ -70,24 +67,31 @@ func AddToCart(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		base := os.Getenv("PRODUCT_SERVICE_URL")        //e.g: http://localhost:8080/product: url
-		url := fmt.Sprintf("%s/%d", base, in.ProductID) //e.g: url/productid
-		//Get product info
-		resp, err := http.Get(url) //e.g: http://localhost:8080/base/:id (ex: .../product/4)
+		// base := os.Getenv("PRODUCT_SERVICE_URL")        //e.g: http://localhost:8080/product: url
+		// url := fmt.Sprintf("%s/%d", base, in.ProductID) //e.g: url/productid
+		// //Get product info
+		// resp, err := http.Get(url) //e.g: http://localhost:8080/base/:id (ex: .../product/4)
+
+		// if err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 	return
+		// }
+		// defer resp.Body.Close()
+
+		// if resp.StatusCode != http.StatusOK {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
+		// 	return
+		// }
+
+		// var p Product
+		// if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read product"})
+		// 	return
+		// }
+
+		p, err := pr.Get(in.ProductID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
-			return
-		}
-
-		var p Product
-		if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read product"})
 			return
 		}
 
@@ -267,10 +271,11 @@ func ClearCart(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		if r.ClearCart(userID) != nil {
-			c.JSON(http.StatusInternalServerError, r.ClearCart(userID).Error())
+		if err := r.ClearCart(userID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		c.Status(http.StatusNoContent)
 	}
 }

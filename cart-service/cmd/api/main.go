@@ -6,10 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/phanthehoang2503/small-project/cart-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/router"
 	"github.com/phanthehoang2503/small-project/internal/database"
+	"github.com/phanthehoang2503/small-project/internal/event"
+	"github.com/phanthehoang2503/small-project/internal/helper"
 
 	_ "github.com/phanthehoang2503/small-project/cart-service/docs"
 	swaggerFiles "github.com/swaggo/files"
@@ -32,15 +35,30 @@ func main() {
 		panic("failed to connect to database...")
 	}
 
-	cartRepo := repo.NewCartRepo(db)
+	b := helper.ConnectRabbit()
+	defer b.Close()
+
+	// Migrations
 	if err := db.AutoMigrate(&model.Cart{}); err != nil {
-		log.Fatalf("Migration failed: %v", err)
+		log.Fatalf("Migration failed (cart): %v", err)
+	}
+	if err := db.AutoMigrate(&model.ProductSnapshot{}); err != nil {
+		log.Fatalf("Migration failed (product_snapshot): %v", err)
 	}
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
+	//repos
+	cr := repo.NewCartRepo(db)
+	pr := repo.NewProductRepo(db)
+
+	pc := consumer.NewProductConsumer(pr)
+	if err := pc.Start(event.ExchangeProduct, "cart_products_queue", "product.*"); err != nil {
+		log.Fatalf("failed to start product consumer: %v", err)
+	}
+
 	r := gin.Default()
-	router.RegisterRoutes(r, cartRepo, jwtSecret)
+	router.RegisterRoutes(r, cr, pr, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8082")

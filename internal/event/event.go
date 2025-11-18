@@ -20,5 +20,6 @@ const (
 	RoutingKeyProductDeleted = "product.deleted"
 
 	// order domain
-	RoutingKeyOrderCreated = "order.created"
+	RoutingKeyOrderRequested = "order.requested"
+	RoutingKeyOrderCreated   = "order.created"
 )
