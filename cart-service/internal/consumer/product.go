@@ -13,13 +13,13 @@ import (
 
 // ProductConsumer holds dependencies
 type ProductConsumer struct {
-	SnapshotRepo *repo.ProductRepo
+	repo *repo.ProductRepo
 }
 
 // NewProductConsumer creates consumer
 func NewProductConsumer(snapshotRepo *repo.ProductRepo) *ProductConsumer {
 	return &ProductConsumer{
-		SnapshotRepo: snapshotRepo,
+		repo: snapshotRepo,
 	}
 }
 
@@ -47,7 +47,7 @@ func (pc *ProductConsumer) Start(exchange, queue, binding string) error {
 		return err
 	}
 
-	msgs, err := ch.Consume(queue, "", true, false, false, false, nil)
+	msgs, err := ch.Consume(queue, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -75,20 +75,20 @@ func (pc *ProductConsumer) handleProductEvent(routingKey string, ev message.Prod
 
 	case "product.created", "product.updated":
 		snap := model.ProductSnapshot{
-			ID:    ev.ID,
-			Name:  ev.Name,
-			Price: ev.Price,
-			Stock: ev.Stock,
+			ProductID: ev.ID,
+			Name:      ev.Name,
+			Price:     ev.Price,
+			Stock:     ev.Stock,
 		}
 
-		if err := pc.SnapshotRepo.Upsert(snap); err != nil {
+		if err := pc.repo.Upsert(snap); err != nil {
 			log.Println("cart-service: failed to upsert snapshot:", err)
 		} else {
 			log.Println("cart-service: snapshot updated for product:", ev.ID)
 		}
 
 	case "product.deleted":
-		if err := pc.SnapshotRepo.Delete(ev.ID); err != nil {
+		if err := pc.repo.Delete(ev.ID); err != nil {
 			log.Println("cart-service: failed to delete snapshot:", err)
 		} else {
 			log.Println("cart-service: snapshot deleted for product:", ev.ID)

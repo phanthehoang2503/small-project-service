@@ -102,7 +102,7 @@ func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 
 		item := model.Cart{
 			UserID:    userID,
-			ProductID: p.ID,
+			ProductID: p.ProductID,
 			Quantity:  in.Quantity,
 			Price:     p.Price,
 			Subtotal:  p.Price * int64(in.Quantity),

@@ -22,4 +22,6 @@ const (
 	// order domain
 	RoutingKeyOrderRequested = "order.requested"
 	RoutingKeyOrderCreated   = "order.created"
+	RoutingKeyOrderPaid      = "order.paid"
+	RoutingKeyOrderCancelled = "order.cancelled"
 )
