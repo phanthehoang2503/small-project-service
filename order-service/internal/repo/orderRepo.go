@@ -91,3 +91,24 @@ func (r *OrderRepo) UpdateStatus(userId, orderId uint, status string) (*model.Or
 	}
 	return &order, nil
 }
+
+// UpdateStatusByUUID updates order.Status by order.UUID and returns the full order (with items).
+// Returns gorm.ErrRecordNotFound if no order matches the UUID.
+func (r *OrderRepo) UpdateStatusByUUID(orderUUID, status string) (*model.Order, error) {
+	var ord model.Order
+
+	// Update status by uuid
+	res := r.db.Model(&model.Order{}).Where("uuid = ?", orderUUID).Update("status", status)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if res.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	// Load and return the full order with items
+	if err := r.db.Preload("Items").Where("uuid = ?", orderUUID).First(&ord).Error; err != nil {
+		return nil, err
+	}
+	return &ord, nil
+}

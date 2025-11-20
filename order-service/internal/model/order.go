@@ -1,9 +1,12 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Order struct {
 	gorm.Model      `swaggerignore:"true"`
+	UUID            string      `json:"uuid" gorm:"size:36;uniqueIndex"`
 	UserID          uint        `json:"user_id" gorm:"index;not null"`
 	Total           int64       `json:"total"`
 	Status          string      `json:"status"`
