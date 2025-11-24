@@ -45,12 +45,12 @@ func (c *OrderPaidConsumer) handle(routingKey string, body []byte) error {
 	var p orderPaidPayload
 	if err := json.Unmarshal(body, &p); err != nil {
 		log.Printf("[payment-event-consumer] invalid payload: %v", err)
-		return nil // ack malformed to avoid poison; change if you want retries
+		return nil // ack malformed message
 	}
 
 	log.Printf("[payment-event-consumer] received order.paid order=%s amount=%d", p.OrderUUID, p.Amount)
 
-	// small safety: if payload has status and it's not 'succeeded', skip
+	// skip if payment status is not succeeded
 	if p.Status != "" && p.Status != "succeeded" && p.Status != "success" {
 		log.Printf("[payment-event-consumer] payment status not succeeded, skipping order=%s status=%s", p.OrderUUID, p.Status)
 		return nil

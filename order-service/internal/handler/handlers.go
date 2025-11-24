@@ -75,7 +75,7 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
-		if err != nil || resp.StatusCode != 200 { //<-- better then using to condition check from cart-service
+		if err != nil || resp.StatusCode != 200 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch cart"})
 			return
 		}
