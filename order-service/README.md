@@ -10,6 +10,10 @@ and retrieving order details. It follows the common project layout with an
 entrypoint at `cmd/api/main.go` and internal packages for handlers, models,
 repositories, and routing. Swagger docs are under `docs/`.
 
+### RabbitMQ Integration
+
+- **Publisher**: Publishes `order.requested` event to `order_exchange` when a new order is created. This triggers the `cart-service` to clear the user's cart.
+
 ### Prerequisites
 
 - Go 1.20+

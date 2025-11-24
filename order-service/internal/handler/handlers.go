@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/util"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
+	"github.com/phanthehoang2503/small-project/order-service/internal/publisher"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
 	"gorm.io/gorm"
 )
@@ -40,7 +44,7 @@ type cartItemResp struct {
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /orders [post]
-func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
+func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// get user from JWT in context
 		userID, err := util.GetUserID(c)
@@ -49,7 +53,6 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 			return
 		}
 
-		// input is not trusted for user; only accept body if you need extra fields (e.g., shipping)
 		var in model.Order
 		if err := c.ShouldBindJSON(&in); err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
@@ -63,7 +66,15 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 		}
 
 		cartURL := fmt.Sprintf("%s/cart?user_id=%d", base, userID)
-		resp, err := http.Get(cartURL)
+		req, err := http.NewRequest("GET", cartURL, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
+			return
+		}
+		req.Header.Set("Authorization", c.GetHeader("Authorization"))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
 		if err != nil || resp.StatusCode != 200 { //<-- better then using to condition check from cart-service
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch cart"})
 			return
@@ -89,12 +100,10 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 
 		order := &model.Order{
 			UserID: userID,
+			UUID:   uuid.New().String(),
 			Status: "Pending",
-			// If you want to carry other fields from `in` (shipping, notes), copy explicitly:
-			ShippingAddress: in.ShippingAddress,
 		}
 
-		// compute server-side subtotals and total (expect price in cents)
 		var total int64
 		for _, item := range cartItems {
 			if item.Quantity <= 0 {
@@ -122,6 +131,13 @@ func CreateOrder(r *repo.OrderRepo) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		if b != nil {
+			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "USD"); err != nil {
+				log.Printf("failed to publish order requested event: %v", err)
+			}
+		}
+
 		c.JSON(http.StatusCreated, created)
 	}
 }

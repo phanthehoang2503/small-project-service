@@ -37,7 +37,7 @@ func (r *OrderRepo) CreateOrder(userId uint, order *model.Order) error {
 	order.Total = total
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(order).Error; err != nil {
+		if err := tx.Omit("Items").Create(order).Error; err != nil {
 			return err
 		}
 		for i := range order.Items {

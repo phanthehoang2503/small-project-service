@@ -287,6 +287,9 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
                 }
             }
         },
