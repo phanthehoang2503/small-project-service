@@ -65,7 +65,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Add a product to the cart (can add amount of it if already in the cart). Call product-service to get stock and price",
+                "description": "Add a product to the cart (can increase quantity if already in the cart).",
                 "consumes": [
                     "application/json"
                 ],
@@ -295,6 +295,10 @@ const docTemplate = `{
     "definitions": {
         "handler.AddToCartReq": {
             "type": "object",
+            "required": [
+                "product_id",
+                "quantity"
+            ],
             "properties": {
                 "product_id": {
                     "type": "integer",
@@ -302,6 +306,7 @@ const docTemplate = `{
                 },
                 "quantity": {
                     "type": "integer",
+                    "minimum": 1,
                     "example": 3
                 }
             }
@@ -333,9 +338,13 @@ const docTemplate = `{
         },
         "handler.UpdateQuantityReq": {
             "type": "object",
+            "required": [
+                "quantity"
+            ],
             "properties": {
                 "quantity": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 2
                 }
             }
         }

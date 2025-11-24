@@ -9,6 +9,11 @@ items. Entrypoint: `cmd/api/main.go`. Internals follow the same layout used by
 other services: `internal/handler`, `internal/model`, `internal/repo`, and
 `internal/router`. Swagger docs live in `docs/`.
 
+### RabbitMQ Integration
+
+- **Consumer**: Listens for `order.requested` event from `order_exchange`. Upon receipt, it clears the user's cart.
+- **Product Fallback**: If product details are missing during cart operations, it automatically fetches them from `product-service`.
+
 ### Prerequisites
 
 - Go 1.20+

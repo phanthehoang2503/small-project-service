@@ -57,6 +57,11 @@ func main() {
 		log.Fatalf("failed to start product consumer: %v", err)
 	}
 
+	oc := consumer.NewOrderConsumer(cr, b)
+	if err := oc.Start(event.ExchangeOrder, "cart_orders_queue", event.RoutingKeyOrderRequested); err != nil {
+		log.Fatalf("failed to start order consumer: %v", err)
+	}
+
 	r := gin.Default()
 	router.RegisterRoutes(r, cr, pr, jwtSecret)
 

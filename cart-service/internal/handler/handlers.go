@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -67,32 +71,45 @@ func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 			return
 		}
 
-		// base := os.Getenv("PRODUCT_SERVICE_URL")        //e.g: http://localhost:8080/product: url
-		// url := fmt.Sprintf("%s/%d", base, in.ProductID) //e.g: url/productid
-		// //Get product info
-		// resp, err := http.Get(url) //e.g: http://localhost:8080/base/:id (ex: .../product/4)
-
-		// if err != nil {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		// 	return
-		// }
-		// defer resp.Body.Close()
-
-		// if resp.StatusCode != http.StatusOK {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
-		// 	return
-		// }
-
-		// var p Product
-		// if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read product"})
-		// 	return
-		// }
-
 		p, err := pr.Get(in.ProductID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
-			return
+			// Try to fetch from product service
+			base := os.Getenv("PRODUCT_SERVICE_URL")
+			if base == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found (and service url not set)"})
+				return
+			}
+			url := fmt.Sprintf("%s/%d", base, in.ProductID)
+			resp, err := http.Get(url)
+			if err != nil {
+				log.Printf("Failed to fetch product: %v", err)
+				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
+				return
+			}
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("Fetch product returned status: %d", resp.StatusCode)
+				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
+				return
+			}
+			defer resp.Body.Close()
+
+			var prod Product
+			if err := json.NewDecoder(resp.Body).Decode(&prod); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decode product"})
+				return
+			}
+
+			// Upsert into snapshot
+			snapshot := model.ProductSnapshot{
+				ProductID: prod.ID,
+				Name:      prod.Name,
+				Price:     prod.Price,
+				Stock:     prod.Stock,
+			}
+			if err := pr.Upsert(snapshot); err != nil {
+				log.Printf("failed to upsert snapshot: %v", err)
+			}
+			p = &snapshot
 		}
 
 		if in.Quantity > p.Stock {

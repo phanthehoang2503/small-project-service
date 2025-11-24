@@ -7,7 +7,11 @@ definitions:
         type: integer
       quantity:
         example: 3
+        minimum: 1
         type: integer
+    required:
+    - product_id
+    - quantity
     type: object
   handler.CartResponse:
     properties:
@@ -30,7 +34,10 @@ definitions:
   handler.UpdateQuantityReq:
     properties:
       quantity:
+        example: 2
         type: integer
+    required:
+    - quantity
     type: object
 host: localhost:8082
 info:
@@ -91,8 +98,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a product to the cart (can add amount of it if already in the
-        cart). Call product-service to get stock and price
+      description: Add a product to the cart (can increase quantity if already in
+        the cart).
       parameters:
       - description: Add to cart payload
         in: body
