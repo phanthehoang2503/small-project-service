@@ -53,6 +53,18 @@ services:
     ports:
       - "8083:8083"
     networks: [backend]
+  
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./payment-service/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8086:8086"
+    networks: [backend]
 
   cart-service:
     build:
