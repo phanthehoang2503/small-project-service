@@ -2,7 +2,6 @@ package publisher
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
@@ -18,13 +17,7 @@ func PublishProductCreated(ctx context.Context, p *model.Product) error {
 		Stock: p.Stock,
 	}
 
-	body, _ := json.Marshal(msg)
-
-	return broker.Global.PublishJSON(
-		event.ExchangeProduct,
-		event.RoutingKeyProductCreated,
-		body,
-	)
+	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductCreated, msg)
 }
 
 func PublishProductUpdated(ctx context.Context, p *model.Product) error {
@@ -35,13 +28,7 @@ func PublishProductUpdated(ctx context.Context, p *model.Product) error {
 		Stock: p.Stock,
 	}
 
-	body, _ := json.Marshal(msg)
-
-	return broker.Global.PublishJSON(
-		event.ExchangeProduct,
-		event.RoutingKeyProductUpdated,
-		body,
-	)
+	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductUpdated, msg)
 }
 
 func PublishProductDeleted(ctx context.Context, id uint) error {
@@ -49,11 +36,9 @@ func PublishProductDeleted(ctx context.Context, id uint) error {
 		ID: id,
 	}
 
-	body, _ := json.Marshal(msg)
+	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductDeleted, msg)
+}
 
-	return broker.Global.PublishJSON(
-		event.ExchangeProduct,
-		event.RoutingKeyProductDeleted,
-		body,
-	)
+func publishJSON(exchange, rk string, payload any) error {
+	return broker.Global.PublishJSON(exchange, rk, payload)
 }
