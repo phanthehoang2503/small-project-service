@@ -24,4 +24,7 @@ const (
 	RoutingKeyOrderCreated   = "order.created"
 	RoutingKeyOrderPaid      = "order.paid"
 	RoutingKeyOrderCancelled = "order.cancelled"
+
+	// payment domain
+	RoutingKeyPaymentFailed = "payment.failed"
 )
