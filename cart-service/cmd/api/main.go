@@ -13,6 +13,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
 
 	_ "github.com/phanthehoang2503/small-project/cart-service/docs"
 	swaggerFiles "github.com/swaggo/files"
@@ -63,6 +64,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, cr, pr, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

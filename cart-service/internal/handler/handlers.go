@@ -73,7 +73,6 @@ func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 
 		p, err := pr.Get(in.ProductID)
 		if err != nil {
-			// Try to fetch from product service
 			base := os.Getenv("PRODUCT_SERVICE_URL")
 			if base == "" {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found (and service url not set)"})

@@ -13,6 +13,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
 	"gorm.io/gorm"
 
 	_ "github.com/phanthehoang2503/small-project/auth-service/docs"
@@ -46,6 +47,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(userRepo, jwtSecret, 72)
 
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, authHandler, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

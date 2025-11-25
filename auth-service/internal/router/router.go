@@ -13,7 +13,7 @@ func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
 		authGroup.POST("/login", h.Login)
 	}
 
-	// Protected API group — reuse shared JWT middleware from pkg/auth
+	// Protected API group
 	api := r.Group("/api")
 	api.Use(middleware.JWTMiddleware(jwtSecret))
 	{

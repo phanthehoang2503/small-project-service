@@ -7,6 +7,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
 	_ "github.com/phanthehoang2503/small-project/product-service/docs"
 	"github.com/phanthehoang2503/small-project/product-service/internal/model"
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
@@ -39,6 +40,7 @@ func main() {
 	logger.SetService("product-service")
 
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, productRepo)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
