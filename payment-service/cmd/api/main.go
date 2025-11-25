@@ -9,6 +9,8 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
+	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
 
 	"github.com/phanthehoang2503/small-project/payment-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/model"
@@ -32,6 +34,9 @@ func main() {
 	b := helper.ConnectRabbit()
 	defer b.Close()
 
+	// tell logger which service this is
+	logger.SetService("payment-service")
+
 	// declare queue & bind it to order exchange routing key
 	queueName := "payment_service_queue"
 	if err := b.DeclareQueue(queueName); err != nil {
@@ -53,6 +58,7 @@ func main() {
 
 	// small HTTP API for payment lookup
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 	r.GET("/payments/:order_uuid", func(c *gin.Context) {
 		orderUUID := c.Param("order_uuid")
 		p, err := payRepo.GetByOrderUUID(orderUUID)

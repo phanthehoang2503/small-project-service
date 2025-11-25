@@ -1,12 +1,15 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
+	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/repo"
 )
 
@@ -51,6 +54,8 @@ func (pc *PaymentConsumer) handle(routingKey string, body []byte) error {
 
 	if _, err := pc.repo.CreatePending(payload.OrderUUID, payload.Total, payload.Currency); err != nil {
 		log.Printf("[payment-consumer] db create failed: %v", err)
+		logger.Error(context.Background(), fmt.Sprintf("Payment failed (db create): order=%s err=%v", payload.OrderUUID, err))
+		pc.publishFailure(payload.OrderUUID, payload.CorrelationID, "db_create_failed")
 		return err
 	}
 
@@ -58,6 +63,7 @@ func (pc *PaymentConsumer) handle(routingKey string, body []byte) error {
 
 	if err := pc.repo.PaymentSucceeded(payload.OrderUUID); err != nil {
 		log.Printf("[payment-consumer] update succeeded failed: %v", err)
+		pc.publishFailure(payload.OrderUUID, payload.CorrelationID, "update_status_failed")
 		return err
 	}
 
@@ -74,7 +80,24 @@ func (pc *PaymentConsumer) handle(routingKey string, body []byte) error {
 		log.Printf("[payment-consumer] publish order.paid failed: %v", err)
 		return err
 	}
+	log.Printf("[payment-consumer] successfully published order.paid event for order=%s", payload.OrderUUID)
 
 	log.Printf("[payment-consumer] payment succeeded order=%s", payload.OrderUUID)
+	logger.Info(context.Background(), fmt.Sprintf("Payment succeeded: order=%s amount=%d", payload.OrderUUID, payload.Total))
 	return nil
+}
+
+func (pc *PaymentConsumer) publishFailure(orderUUID, correlationID, reason string) {
+	out := map[string]interface{}{
+		"correlation_id": correlationID,
+		"order_uuid":     orderUUID,
+		"status":         "failed",
+		"reason":         reason,
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
+	}
+	if err := pc.b.PublishJSON(event.ExchangeOrder, event.RoutingKeyPaymentFailed, out); err != nil {
+		log.Printf("[payment-consumer] failed to publish payment.failed: %v", err)
+	} else {
+		log.Printf("[payment-consumer] published payment.failed order=%s reason=%s", orderUUID, reason)
+	}
 }
