@@ -7,7 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/phanthehoang2503/small-project/internal/database"
+	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
+	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/order-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
 	"github.com/phanthehoang2503/small-project/order-service/internal/router"
@@ -35,13 +39,36 @@ func main() {
 	b := helper.ConnectRabbit()
 	defer b.Close()
 
+	// tell logger which service this is
+	logger.SetService("order-service")
+
 	if err := db.AutoMigrate(&model.Order{}, &model.OrderItem{}); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
-	orderRepo := repo.NewOrderRepo(db)
-	secret := []byte(os.Getenv("JWT_SECRET"))
+	s := repo.NewOrderRepo(db)
+
+	// Setup queue for order.paid events
+	queueName := "payment_queue"
+	if err := b.DeclareQueue(queueName); err != nil {
+		log.Fatalf("failed to declare queue: %v", err)
+	}
+
+	// Bind queue to order exchange with order.paid routing key
+	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyOrderPaid, event.RoutingKeyPaymentFailed}); err != nil {
+		log.Fatalf("failed to bind queue: %v", err)
+	}
+
+	// Start payment consumer
+	paymentConsumer := consumer.NewOrderPaidConsumer(s, b)
+	if err := paymentConsumer.Start(queueName); err != nil {
+		log.Fatalf("failed to start payment consumer: %v", err)
+	}
+	log.Println("[order-service] payment consumer started")
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	r := gin.Default()
-	router.RegisterRoutes(r, orderRepo, b, secret)
+	r.Use(middleware.CORSMiddleware())
+	router.RegisterRoutes(r, s, b, jwtSecret)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8083")

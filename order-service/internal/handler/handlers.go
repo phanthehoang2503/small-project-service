@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/phanthehoang2503/small-project/internal/broker"
+	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/util"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/publisher"
@@ -65,7 +66,7 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 			return
 		}
 
-		cartURL := fmt.Sprintf("%s/cart?user_id=%d", base, userID)
+		cartURL := base
 		req, err := http.NewRequest("GET", cartURL, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
@@ -133,12 +134,14 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 		}
 
 		if b != nil {
-			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "USD"); err != nil {
+			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "VND"); err != nil {
 				log.Printf("failed to publish order requested event: %v", err)
 			}
 		}
 
 		c.JSON(http.StatusCreated, created)
+
+		logger.Info(c.Request.Context(), fmt.Sprintf("Order created: id=%d uuid=%s user_id=%d total=%d", created.ID, created.UUID, created.UserID, created.Total))
 	}
 }
 
@@ -267,5 +270,7 @@ func UpdateOrderStatus(r *repo.OrderRepo) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, updated)
+
+		logger.Info(c.Request.Context(), fmt.Sprintf("Order status updated: id=%d status=%s", updated.ID, updated.Status))
 	}
 }

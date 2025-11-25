@@ -37,6 +37,10 @@ func (c *OrderPaidConsumer) Start(queueName string) error {
 }
 
 func (c *OrderPaidConsumer) handle(routingKey string, body []byte) error {
+	if routingKey == event.RoutingKeyPaymentFailed {
+		return c.handlePaymentFailed(body)
+	}
+
 	if routingKey != event.RoutingKeyOrderPaid {
 		// ignore unrelated keys but ack
 		return nil
@@ -71,5 +75,26 @@ func (c *OrderPaidConsumer) handle(routingKey string, body []byte) error {
 
 	_ = p
 	time.Sleep(10 * time.Millisecond)
+	return nil
+}
+
+func (c *OrderPaidConsumer) handlePaymentFailed(body []byte) error {
+	var p struct {
+		OrderUUID string `json:"order_uuid"`
+		Reason    string `json:"reason"`
+	}
+	if err := json.Unmarshal(body, &p); err != nil {
+		log.Printf("[payment-event-consumer] invalid failure payload: %v", err)
+		return nil
+	}
+
+	log.Printf("[payment-event-consumer] received payment.failed order=%s reason=%s", p.OrderUUID, p.Reason)
+
+	if _, err := c.repo.UpdateStatusByUUID(p.OrderUUID, "Cancelled"); err != nil {
+		log.Printf("[payment-event-consumer] failed to cancel order: %v", err)
+		return err
+	}
+
+	log.Printf("[payment-event-consumer] order cancelled uuid=%s", p.OrderUUID)
 	return nil
 }
