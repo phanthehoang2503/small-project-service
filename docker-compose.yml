@@ -9,16 +9,16 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks: [backend]
+    networks: [ backend ]
 
   rabbitmq:
     image: rabbitmq:4.2-alpine
     ports:
       - "5672:5672"
-      - "15672:15672" # optional web UI if you want to debug
+      - "15672:15672"
     volumes:
       - rabbit-data:/var/lib/rabbitmq
-    networks: [backend]
+    networks: [ backend ]
 
   logger-service:
     build:
@@ -29,7 +29,7 @@ services:
       - rabbitmq
     ports:
       - "8085:8085"
-    networks: [backend]
+    networks: [ backend ]
 
   product-service:
     build:
@@ -40,7 +40,7 @@ services:
       - db
     ports:
       - "8081:8081"
-    networks: [backend]
+    networks: [ backend ]
 
   order-service:
     build:
@@ -52,8 +52,8 @@ services:
       - rabbitmq
     ports:
       - "8083:8083"
-    networks: [backend]
-  
+    networks: [ backend ]
+
   payment-service:
     build:
       context: .
@@ -64,7 +64,7 @@ services:
       - rabbitmq
     ports:
       - "8086:8086"
-    networks: [backend]
+    networks: [ backend ]
 
   cart-service:
     build:
@@ -76,7 +76,7 @@ services:
       - rabbitmq
     ports:
       - "8082:8082"
-    networks: [backend]
+    networks: [ backend ]
 
   auth-service:
     build:
@@ -89,18 +89,30 @@ services:
       - logger-service
     ports:
       - "8084:8084"
-    networks: [backend]
+    networks: [ backend ]
+
+  mailer-service:
+    build:
+      context: .
+      dockerfile: ./mailer-service/Dockerfile
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+      - mailhog
+    networks: [ backend ]
 
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"
       - "8025:8025"
-    networks: [backend]
+    networks: [ backend ]
 
 volumes:
   db_data:
   rabbit-data:
+
 
 networks:
   backend:
