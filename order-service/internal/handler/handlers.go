@@ -25,15 +25,6 @@ type UpdateStatusReq struct {
 	Status string `json:"status" binding:"required" example:"Paid"`
 }
 
-type cartItemResp struct {
-	CartID    uint  `json:"ID,omitempty"`
-	UserID    uint  `json:"user_id"`
-	ProductID uint  `json:"product_id"`
-	Quantity  int   `json:"quantity"`
-	Price     int64 `json:"price"`
-	Subtotal  int64 `json:"subtotal"`
-}
-
 // CreateOrder godoc
 // @Summary Create a new order from the current cart
 // @Tags Orders
