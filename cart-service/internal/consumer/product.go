@@ -25,48 +25,23 @@ func NewProductConsumer(snapshotRepo *repo.ProductRepo) *ProductConsumer {
 
 // Start begins consuming product events
 func (pc *ProductConsumer) Start(exchange, queue, binding string) error {
-	ch := broker.Global.Channel()
-	if ch == nil {
-		return fmt.Errorf("rabbitmq not initialized")
+	if err := broker.DeclareQueue(queue); err != nil {
+		return fmt.Errorf("failed to declare queue: %w", err)
 	}
 
-	// declare queue
-	_, err := ch.QueueDeclare(
-		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return err
+	if err := broker.BindQueue(queue, exchange, []string{binding}); err != nil {
+		return fmt.Errorf("failed to bind queue: %w", err)
 	}
 
-	if err := ch.QueueBind(queue, binding, exchange, false, nil); err != nil {
-		return err
-	}
-
-	msgs, err := ch.Consume(queue, "", false, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for m := range msgs {
-			var ev message.ProductMessage
-
-			if err := json.Unmarshal(m.Body, &ev); err != nil {
-				log.Println("cart-service: failed to parse product event:", err)
-				continue
-			}
-
-			pc.handleProductEvent(m.RoutingKey, ev)
+	return broker.Consume(queue, func(routingKey string, body []byte) error {
+		var ev message.ProductMessage
+		if err := json.Unmarshal(body, &ev); err != nil {
+			log.Println("cart-service: failed to parse product event:", err)
+			return nil // ack malformed
 		}
-	}()
-
-	log.Println("cart-service: listening for product events...")
-	return nil
+		pc.handleProductEvent(routingKey, ev)
+		return nil
+	})
 }
 
 // process events
