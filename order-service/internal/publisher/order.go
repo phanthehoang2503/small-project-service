@@ -5,23 +5,17 @@ import (
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
+	"github.com/phanthehoang2503/small-project/internal/message"
 )
 
-type orderRequestedPayload struct {
-	CorrelationID string `json:"correlation_id"`
-	OrderUUID     string `json:"order_uuid"`
-	UserID        uint   `json:"user_id"`
-	Total         int64  `json:"total"`
-	Currency      string `json:"currency"`
-}
-
-func PublishOrderRequested(b *broker.Broker, correlationID, orderUUID string, userID uint, total int64, currency string) error {
-	payload := orderRequestedPayload{
+func PublishOrderRequested(b *broker.Broker, correlationID, orderUUID string, userID uint, total int64, currency string, items []message.OrderItem) error {
+	payload := message.OrderRequested{
 		CorrelationID: correlationID,
 		OrderUUID:     orderUUID,
 		UserID:        userID,
 		Total:         total,
 		Currency:      currency,
+		Items:         items,
 	}
 
 	if err := b.PublishJSON(event.ExchangeOrder, event.RoutingKeyOrderRequested, payload); err != nil {

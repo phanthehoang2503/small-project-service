@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/internal/util"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/publisher"
@@ -125,7 +126,14 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 		}
 
 		if b != nil {
-			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "VND"); err != nil {
+			var msgItems []message.OrderItem
+			for _, i := range created.Items {
+				msgItems = append(msgItems, message.OrderItem{
+					ProductID: i.ProductID,
+					Quantity:  i.Quantity,
+				})
+			}
+			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "VND", msgItems); err != nil {
 				log.Printf("failed to publish order requested event: %v", err)
 			}
 		}
@@ -263,5 +271,50 @@ func UpdateOrderStatus(r *repo.OrderRepo) gin.HandlerFunc {
 		c.JSON(http.StatusOK, updated)
 
 		logger.Info(c.Request.Context(), fmt.Sprintf("Order status updated: id=%d status=%s", updated.ID, updated.Status))
+	}
+}
+
+// SearchOrders godoc
+// @Summary Search for an order by ID
+// @Tags Orders
+// @Security BearerAuth
+// @Produce json
+// @Param id query int true "Order ID"
+// @Success 200 {object} model.Order
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /orders/search [get]
+func SearchOrders(r *repo.OrderRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := util.GetUserID(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+			return
+		}
+
+		idStr := c.Query("id")
+		if idStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "id query parameter required"})
+			return
+		}
+
+		id64, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+			return
+		}
+		id := uint(id64)
+
+		order, err := r.GetByID(userID, id)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "order not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, order)
 	}
 }

@@ -14,6 +14,7 @@ func RegisterRoutes(r *gin.Engine, s *repo.OrderRepo, b *broker.Broker, jwtSecre
 	{
 		api.POST("", handler.CreateOrder(s, b)) // List all orders for a specific user (?user_id=1)
 		api.GET("", handler.ListOrders(s))
+		api.GET("/search", handler.SearchOrders(s)) // Search order by ID (?id=1)
 		api.GET("/:id", handler.GetOrder(s))
 		api.PUT("/:id/status", handler.UpdateOrderStatus(s)) // Update order status (/orders/:id/status)
 	}
