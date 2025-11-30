@@ -10,6 +10,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/logger"
+	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/repo"
 )
 
@@ -21,14 +22,6 @@ type PaymentConsumer struct {
 // creates consumer
 func NewPaymentConsumer(r *repo.PaymentRepo, b *broker.Broker) *PaymentConsumer {
 	return &PaymentConsumer{repo: r, b: b}
-}
-
-type orderRequestedPayload struct {
-	CorrelationID string `json:"correlation_id"`
-	OrderUUID     string `json:"order_uuid"`
-	UserID        uint   `json:"user_id"`
-	Total         int64  `json:"total"`
-	Currency      string `json:"currency"`
 }
 
 // Start registers consume handler on the broker. It expects the queue to be declared & bound beforehand.
@@ -44,7 +37,7 @@ func (pc *PaymentConsumer) handle(routingKey string, body []byte) error {
 		return nil
 	}
 
-	var payload orderRequestedPayload
+	var payload message.OrderRequested
 	if err := json.Unmarshal(body, &payload); err != nil {
 		log.Printf("[payment-consumer] invalid payload: %v", err)
 		return nil
