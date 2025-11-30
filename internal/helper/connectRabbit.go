@@ -15,23 +15,22 @@ func ConnectRabbit() *broker.Broker {
 		rabbitURL = "amqp://guest:guest@rabbitmq:5672/"
 	}
 
-	var (
-		b   *broker.Broker
-		err error
-	)
-
-	for i := 0; i < 10; i++ {
-		b, err = broker.Init(rabbitURL)
-		if err == nil {
-			log.Printf("connected to RabbitMQ (attempt %d)\n", i+1)
-			break
-		}
-		log.Printf("attempt %d: failed to connect to RabbitMQ (%v)\n", i+1, err)
-		time.Sleep(3 * time.Second)
-	}
-
+	// Init broker (it handles reconnection internally)
+	b, err := broker.Init(rabbitURL)
 	if err != nil {
-		log.Fatal("could not connect to RabbitMQ after multiple attempts:", err)
+		// If initial connection fails, we might want to retry a few times
+		// or just fail fast. For now, let's retry a bit to wait for RabbitMQ container.
+		for i := 0; i < 10; i++ {
+			log.Printf("attempt %d: connecting to RabbitMQ...", i+1)
+			b, err = broker.Init(rabbitURL)
+			if err == nil {
+				break
+			}
+			time.Sleep(3 * time.Second)
+		}
+		if err != nil {
+			log.Fatal("could not connect to RabbitMQ:", err)
+		}
 	}
 
 	// Declare exchanges that this service might use.

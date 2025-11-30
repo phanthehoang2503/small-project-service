@@ -4,198 +4,253 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"sync"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Broker struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
+	url          string
+	conn         *amqp.Connection
+	mu           sync.Mutex
+	pubChan      *amqp.Channel // Dedicated channel for publishing
+	pubChanMutex sync.Mutex    // Protects pubChan access
 }
 
-// Global broker
 var Global *Broker
 
-// Init sets up connection + channel.
+// Init initializes the broker and establishes the first connection.
 func Init(url string) (*Broker, error) {
 	if url == "" {
 		return nil, errors.New("rabbitmq url required")
 	}
 
-	conn, err := amqp.Dial(url)
-	if err != nil {
+	b := &Broker{
+		url: url,
+	}
+
+	if err := b.connect(); err != nil {
 		return nil, err
 	}
 
+	// Start background reconnection handler
+	go b.watchConnection()
+
+	Global = b
+	return b, nil
+}
+
+// connect establishes the connection and sets up the publishing channel.
+func (b *Broker) connect() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	log.Printf("RabbitMQ: attempting to connect to %s", b.url)
+	conn, err := amqp.Dial(b.url)
+	if err != nil {
+		return err
+	}
+	b.conn = conn
+
+	// Setup publishing channel
 	ch, err := conn.Channel()
 	if err != nil {
 		_ = conn.Close()
-		return nil, err
+		return err
 	}
+	b.pubChan = ch
 
-	b := &Broker{
-		conn:    conn,
-		channel: ch,
+	log.Println("RabbitMQ: connected")
+	return nil
+}
+
+// watchConnection monitors the connection and reconnects on failure.
+func (b *Broker) watchConnection() {
+	for {
+		b.mu.Lock()
+		if b.conn == nil {
+			b.mu.Unlock()
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		notifyClose := b.conn.NotifyClose(make(chan *amqp.Error))
+		b.mu.Unlock()
+
+		// Block until close notification
+		err := <-notifyClose
+		if err != nil {
+			log.Printf("RabbitMQ: connection lost: %v", err)
+			b.reconnect()
+		} else {
+			// Graceful shutdown
+			log.Println("RabbitMQ: connection closed gracefully")
+			return
+		}
 	}
+}
 
-	Global = b
+func (b *Broker) reconnect() {
+	for {
+		time.Sleep(3 * time.Second)
+		if err := b.connect(); err != nil {
+			log.Printf("RabbitMQ: reconnection failed: %v", err)
+			continue
+		}
+		log.Println("RabbitMQ: reconnected")
+		return
+	}
+}
 
-	log.Println("RabbitMQ connected")
-	return b, nil
+// getPubChannel returns the current publishing channel safely.
+func (b *Broker) getPubChannel() (*amqp.Channel, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.conn == nil || b.conn.IsClosed() {
+		return nil, errors.New("connection closed")
+	}
+	if b.pubChan == nil || b.pubChan.IsClosed() {
+		// Try to recreate channel if connection is open but channel is closed
+		ch, err := b.conn.Channel()
+		if err != nil {
+			return nil, err
+		}
+		b.pubChan = ch
+	}
+	return b.pubChan, nil
 }
 
 // DeclareTopicExchange declares a durable topic exchange.
 func (b *Broker) DeclareTopicExchange(name string) error {
-	if b == nil || b.channel == nil {
-		return errors.New("rabbitmq broker not initialized")
+	ch, err := b.getPubChannel()
+	if err != nil {
+		return err
 	}
-	if name == "" {
-		return errors.New("exchange name required")
-	}
-
-	return b.channel.ExchangeDeclare(
-		name,
-		"topic",
-		true,  // durable
-		false, // autoDelete
-		false, // internal
-		false, // noWait
-		nil,   // args
-	)
+	b.pubChanMutex.Lock()
+	defer b.pubChanMutex.Unlock()
+	return ch.ExchangeDeclare(name, "topic", true, false, false, false, nil)
 }
 
 // DeclareQueue declares a durable queue.
 func (b *Broker) DeclareQueue(name string) error {
-	if b == nil || b.channel == nil {
-		return errors.New("rabbitmq broker not initialized")
+	ch, err := b.getPubChannel()
+	if err != nil {
+		return err
 	}
-	if name == "" {
-		return errors.New("queue name required")
-	}
-
-	_, err := b.channel.QueueDeclare(
-		name,
-		true,  // durable
-		false, // autoDelete
-		false, // exclusive
-		false, // noWait
-		nil,   // args
-	)
+	b.pubChanMutex.Lock()
+	defer b.pubChanMutex.Unlock()
+	_, err = ch.QueueDeclare(name, true, false, false, false, nil)
 	return err
 }
 
-// BindQueue binds a queue to an exchange with a list of routing keys.
+// BindQueue binds a queue to an exchange.
 func (b *Broker) BindQueue(queue, exchange string, routingKeys []string) error {
-	if b == nil || b.channel == nil {
-		return errors.New("rabbitmq broker not initialized")
+	ch, err := b.getPubChannel()
+	if err != nil {
+		return err
 	}
-	if queue == "" {
-		return errors.New("queue name required")
-	}
-	if exchange == "" {
-		return errors.New("exchange name required")
-	}
-	if len(routingKeys) == 0 {
-		return errors.New("at least one routing key required")
-	}
+	b.pubChanMutex.Lock()
+	defer b.pubChanMutex.Unlock()
 
 	for _, key := range routingKeys {
-		if err := b.channel.QueueBind(
-			queue,
-			key,
-			exchange,
-			false, // noWait
-			nil,   // args
-		); err != nil {
+		if err := ch.QueueBind(queue, key, exchange, false, nil); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// PublishJSON publishes a JSON payload to an exchange with a routing key.
+// PublishJSON publishes a JSON payload.
 func (b *Broker) PublishJSON(exchange, routingKey string, payload any) error {
-	if b == nil || b.channel == nil {
-		return errors.New("rabbitmq broker not initialized")
-	}
-	if exchange == "" {
-		return errors.New("exchange name required")
-	}
-	if routingKey == "" {
-		return errors.New("routing key required")
-	}
-
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
-	return b.channel.Publish(
-		exchange,
-		routingKey,
-		false, // mandatory
-		false, // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        body,
-			Timestamp:   time.Now(),
-		},
-	)
+	// Retry logic for publishing
+	for i := 0; i < 3; i++ {
+		ch, err := b.getPubChannel()
+		if err != nil {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		b.pubChanMutex.Lock()
+		err = ch.Publish(
+			exchange,
+			routingKey,
+			false,
+			false,
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        body,
+				Timestamp:   time.Now(),
+			},
+		)
+		b.pubChanMutex.Unlock()
+
+		if err == nil {
+			return nil
+		}
+		log.Printf("RabbitMQ: publish failed (attempt %d): %v", i+1, err)
+		time.Sleep(200 * time.Millisecond)
+	}
+	return errors.New("failed to publish message after retries")
 }
 
-// Consume starts consuming messages from a queue and passes them to handler.
-// handler should return error to Nack (and requeue) or nil to Ack.
+// Consume starts consuming messages using a NEW dedicated channel.
 func (b *Broker) Consume(queue string, handler func(routingKey string, body []byte) error) error {
-	if b == nil || b.channel == nil {
-		return errors.New("rabbitmq broker not initialized")
+	b.mu.Lock()
+	if b.conn == nil || b.conn.IsClosed() {
+		b.mu.Unlock()
+		return errors.New("connection closed")
 	}
-	if queue == "" {
-		return errors.New("queue name required")
-	}
-	if handler == nil {
-		return errors.New("handler required")
-	}
+	// Create a NEW channel for this consumer
+	ch, err := b.conn.Channel()
+	b.mu.Unlock()
 
-	// optional: set basic QoS
-	if err := b.channel.Qos(
-		10,    // prefetch count
-		0,     // prefetch size
-		false, // global
-	); err != nil {
+	if err != nil {
 		return err
 	}
 
-	msgs, err := b.channel.Consume(
-		queue,
-		"",    // consumer tag
-		false, // autoAck
-		false, // exclusive
-		false, // noLocal
-		false, // noWait
-		nil,   // args
-	)
+	if err := ch.Qos(10, 0, false); err != nil {
+		return err
+	}
+
+	msgs, err := ch.Consume(queue, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		log.Printf("RabbitMQ: consuming from queue %q\n", queue)
+		log.Printf("RabbitMQ: consuming from queue %q", queue)
 		for msg := range msgs {
 			if err := handler(msg.RoutingKey, msg.Body); err != nil {
-				// handler failed → Nack and requeue
 				_ = msg.Nack(false, true)
 				continue
 			}
 			_ = msg.Ack(false)
 		}
-		log.Printf("RabbitMQ: consumer for queue %q stopped\n", queue)
+		log.Printf("RabbitMQ: consumer for queue %q stopped", queue)
+		// Note: If the connection dies, this loop ends.
+		// The consumer needs to be restarted.
+		// For now, we rely on the service crashing/restarting or advanced consumer supervision (out of scope for this refactor).
 	}()
 
 	return nil
 }
 
-// Global helpers using the Global broker instance.
+// Close closes the connection.
+func (b *Broker) Close() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.conn != nil {
+		b.conn.Close()
+	}
+}
+
+// --- Global Helpers ---
+
 func DeclareTopicExchange(exchange string) error {
 	if Global == nil {
 		return errors.New("global broker not initialized")
@@ -231,32 +286,10 @@ func Consume(queue string, handler func(routingKey string, body []byte) error) e
 	return Global.Consume(queue, handler)
 }
 
-// Channel returns the underlying AMQP channel.
-func (b *Broker) Channel() *amqp.Channel {
-	if b == nil {
-		return nil
-	}
-	return b.channel
-}
-
-// GlobalChannel returns the AMQP channel from the Global broker.
-func GlobalChannel() *amqp.Channel {
+func Channel() *amqp.Channel {
 	if Global == nil {
 		return nil
 	}
-	return Global.channel
-}
-
-// Close closes channel and connection.
-func (b *Broker) Close() {
-	if b == nil {
-		return
-	}
-	if b.channel != nil {
-		_ = b.channel.Close()
-	}
-	if b.conn != nil {
-		_ = b.conn.Close()
-	}
-	log.Println("RabbitMQ connection closed")
+	ch, _ := Global.getPubChannel()
+	return ch
 }

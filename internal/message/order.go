@@ -1,8 +1,12 @@
 package message
 
 type OrderRequested struct {
-	UserID uint        `json:"user_id"`
-	Items  []OrderItem `json:"items"`
+	CorrelationID string      `json:"correlation_id"`
+	OrderUUID     string      `json:"order_uuid"`
+	UserID        uint        `json:"user_id"`
+	Total         int64       `json:"total"`
+	Currency      string      `json:"currency"`
+	Items         []OrderItem `json:"items"`
 }
 
 type OrderItem struct {
