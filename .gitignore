@@ -1,5 +1,7 @@
 .env
 .db-data
+
+front-end/*
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go
 
@@ -25,6 +27,7 @@
 
 # Go workspace file
 go.work
+
 
 ### VisualStudioCode ###
 .vscode/*
