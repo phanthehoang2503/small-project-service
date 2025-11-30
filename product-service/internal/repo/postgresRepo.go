@@ -62,3 +62,9 @@ func (d *Database) Delete(id int64) error {
 	}
 	return nil
 }
+
+func (d *Database) DeductStock(productID uint, quantity int) error {
+	return d.DB.Model(&model.Product{}).
+		Where("id = ? AND stock >= ?", productID, quantity).
+		Update("stock", gorm.Expr("stock - ?", quantity)).Error
+}
