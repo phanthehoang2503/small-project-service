@@ -122,9 +122,9 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 
 | Service | Port | Mô tả |
 |----------|------|-------|
-| **PostgreSQL** | 5432 | Database chính |
-| **RabbitMQ** | 5672 (15672 UI) | Message broker |
-| **MailHog** | 1025 (8025 UI) | Công cụ test email |
+| **PostgreSQL** | 5432 | CSDL |
+| **RabbitMQ** | 5672 (15672 UI) | Message |
+| **MailHog** | 1025 (8025 UI) | Dùng để test email |
 
 ---
 

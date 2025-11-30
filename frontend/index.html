@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices Testing Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 20px 30px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .endpoint:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .method {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .method.post { background: #28a745; color: white; }
+        .method.get { background: #17a2b8; color: white; }
+        .method.put { background: #ffc107; color: #333; }
+        .method.delete { background: #dc3545; color: white; }
+
+        .endpoint-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .response-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #1e1e1e;
+            border-radius: 8px;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-box.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .response-box.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .token-display {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .token-label {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .tab {
+                padding: 15px 20px;
+                font-size: 0.9em;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Microservices Testing Dashboard</h1>
+            <p>Test all your microservices in one place</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('auth')">🔐 Auth</button>
+            <button class="tab" onclick="switchTab('product')">📦 Product</button>
+            <button class="tab" onclick="switchTab('cart')">🛒 Cart</button>
+            <button class="tab" onclick="switchTab('order')">📋 Order</button>
+            <button class="tab" onclick="switchTab('payment')">💳 Payment</button>
+        </div>
+
+        <!-- Auth Service Tab -->
+        <div id="auth" class="tab-content active">
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-title">Register User</span>
+                </div>
+                <div class="input-group">
+                    <label>Email:</label>
+                    <input type="email" id="auth-register-email" placeholder="user@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Username:</label>
+                    <input type="text" id="auth-register-username" placeholder="username123">
+                </div>
+                <div class="input-group">
+                    <label>Password:</label>
+                    <input type="password" id="auth-register-password" placeholder="password123">
+                </div>
+                <button class="btn" onclick="registerUser()">Register</button>
+                <div id="auth-register-response" class="response-box" style="display:none;"></div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-title">Login</span>
+                </div>
+                <div class="input-group">
+                    <label>Email/Username:</label>
+                    <input type="text" id="auth-login-email" placeholder="user@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password:</label>
+                    <input type="password" id="auth-login-password" placeholder="password123">
+                </div>
+                <button class="btn" onclick="loginUser()">Login</button>
+                <div id="auth-login-response" class="response-box" style="display:none;"></div>
+                <div id="token-display" class="token-display" style="display:none;">
+                    <div class="token-label">🔑 JWT Token (Auto-saved):</div>
+                    <div id="token-value"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Service Tab -->
+        <div id="product" class="tab-content">
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-title">List Products</span>
+                </div>
+                <button class="btn" onclick="listProducts()">Get Products</button>
+                <div id="product-list-response" class="response-box" style="display:none;"></div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-title">Create Product</span>
+                </div>
+                <div class="input-group">
+                    <label>Product Name:</label>
+                    <input type="text" id="product-name" placeholder="Awesome Product">
+                </div>
+                <div class="input-group">
+                    <label>Price:</label>
+                    <input type="number" id="product-price" placeholder="99000">
+                </div>
+                <div class="input-group">
+                    <label>Stock:</label>
+                    <input type="number" id="product-stock" placeholder="100">
+                </div>
+                <button class="btn" onclick="createProduct()">Create Product</button>
+                <div id="product-create-response" class="response-box" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Cart Service Tab -->
+        <div id="cart" class="tab-content">
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-title">View Cart</span>
+                </div>
+                <button class="btn" onclick="viewCart()">Get My Cart</button>
+                <div id="cart-view-response" class="response-box" style="display:none;"></div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-title">Add to Cart</span>
+                </div>
+                <div class="input-group">
+                    <label>Product ID:</label>
+                    <input type="number" id="cart-product-id" placeholder="1">
+                </div>
+                <div class="input-group">
+                    <label>Quantity:</label>
+                    <input type="number" id="cart-quantity" placeholder="2">
+                </div>
+                <button class="btn" onclick="addToCart()">Add to Cart</button>
+                <div id="cart-add-response" class="response-box" style="display:none;"></div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method delete">DELETE</span>
+                    <span class="endpoint-title">Clear Cart</span>
+                </div>
+                <button class="btn" onclick="clearCart()">Clear Cart</button>
+                <div id="cart-clear-response" class="response-box" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Order Service Tab -->
+        <div id="order" class="tab-content">
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-title">List Orders</span>
+                </div>
+                <button class="btn" onclick="listOrders()">Get My Orders</button>
+                <div id="order-list-response" class="response-box" style="display:none;"></div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-title">Create Order (Checkout)</span>
+                </div>
+                <p style="color: #6c757d; margin-bottom: 15px;">Creates an order from your current cart items</p>
+                <button class="btn" onclick="createOrder()">Create Order</button>
+                <div id="order-create-response" class="response-box" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Payment Service Tab -->
+        <div id="payment" class="tab-content">
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-title">Check Payment Status</span>
+                </div>
+                <div class="input-group">
+                    <label>Order UUID:</label>
+                    <input type="text" id="payment-order-uuid" placeholder="Get from order creation">
+                </div>
+                <button class="btn" onclick="checkPaymentStatus()">Check Status</button>
+                <div id="payment-response" class="response-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URLS = {
+            auth: 'http://localhost:8084',
+            product: 'http://localhost:8081',
+            cart: 'http://localhost:8082',
+            order: 'http://localhost:8083',
+            payment: 'http://localhost:8086'
+        };
+
+        let authToken = localStorage.getItem('authToken') || '';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'response-box ' + (isError ? 'error' : 'success');
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function makeRequest(url, method, body = null, useAuth = false) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (useAuth && authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                return { data, status: response.status, ok: response.ok };
+            } catch (error) {
+                return { data: { error: error.message }, status: 0, ok: false };
+            }
+        }
+
+        // Auth Service
+        async function registerUser() {
+            const body = {
+                email: document.getElementById('auth-register-email').value,
+                username: document.getElementById('auth-register-username').value,
+                password: document.getElementById('auth-register-password').value
+            };
+            const result = await makeRequest(`${API_URLS.auth}/auth/register`, 'POST', body);
+            showResponse('auth-register-response', result.data, !result.ok);
+        }
+
+        async function loginUser() {
+            const body = {
+                login: document.getElementById('auth-login-email').value,
+                password: document.getElementById('auth-login-password').value
+            };
+            const result = await makeRequest(`${API_URLS.auth}/auth/login`, 'POST', body);
+            showResponse('auth-login-response', result.data, !result.ok);
+            
+            if (result.ok && result.data.token) {
+                authToken = result.data.token;
+                localStorage.setItem('authToken', authToken);
+                document.getElementById('token-display').style.display = 'block';
+                document.getElementById('token-value').textContent = authToken;
+            }
+        }
+
+        // Product Service
+        async function listProducts() {
+            const result = await makeRequest(`${API_URLS.product}/products`, 'GET');
+            showResponse('product-list-response', result.data, !result.ok);
+        }
+
+        async function createProduct() {
+            const body = [{
+                name: document.getElementById('product-name').value,
+                price: parseInt(document.getElementById('product-price').value),
+                stock: parseInt(document.getElementById('product-stock').value)
+            }];
+            const result = await makeRequest(`${API_URLS.product}/products`, 'POST', body);
+            showResponse('product-create-response', result.data, !result.ok);
+        }
+
+        // Cart Service
+        async function viewCart() {
+            const result = await makeRequest(`${API_URLS.cart}/cart`, 'GET', null, true);
+            showResponse('cart-view-response', result.data, !result.ok);
+        }
+
+        async function addToCart() {
+            const body = {
+                product_id: parseInt(document.getElementById('cart-product-id').value),
+                quantity: parseInt(document.getElementById('cart-quantity').value)
+            };
+            const result = await makeRequest(`${API_URLS.cart}/cart`, 'POST', body, true);
+            showResponse('cart-add-response', result.data, !result.ok);
+        }
+
+        async function clearCart() {
+            const result = await makeRequest(`${API_URLS.cart}/cart`, 'DELETE', null, true);
+            showResponse('cart-clear-response', result.data || { message: 'Cart cleared' }, !result.ok);
+        }
+
+        // Order Service
+        async function listOrders() {
+            const result = await makeRequest(`${API_URLS.order}/orders`, 'GET', null, true);
+            showResponse('order-list-response', result.data, !result.ok);
+        }
+
+        async function createOrder() {
+            const result = await makeRequest(`${API_URLS.order}/orders`, 'POST', {}, true);
+            showResponse('order-create-response', result.data, !result.ok);
+        }
+
+        // Payment Service
+        async function checkPaymentStatus() {
+            const orderUUID = document.getElementById('payment-order-uuid').value;
+            if (!orderUUID) {
+                alert("Please enter Order UUID");
+                return;
+            }
+            const result = await makeRequest(`${API_URLS.payment}/payments/${orderUUID}`, 'GET');
+            showResponse('payment-response', result.data, !result.ok);
+        }
+
+        // Load saved token on page load
+        if (authToken) {
+            document.getElementById('token-display').style.display = 'block';
+            document.getElementById('token-value').textContent = authToken;
+        }
+    </script>
+</body>
+</html>
