@@ -10,6 +10,33 @@ It’s not for production use — it’s designed for learning how real systems 
 Each service runs independently with its own routes, database models, and Swagger docs.
 All services communicate through REST and RabbitMQ.
 
+```mermaid
+graph TD;
+    User[User / Client] -->|REST| Auth[Auth Service]
+    User -->|REST| Product[Product Service]
+    User -->|REST| Cart[Cart Service]
+    User -->|REST| Order[Order Service]
+    
+    Order -->|REST| Cart
+    Order -->|Publish order.requested| RabbitMQ
+    
+    RabbitMQ -->|Consume| Product
+    RabbitMQ -->|Consume| Payment[Payment Service]
+    RabbitMQ -->|Consume| Logger[Logger Service]
+    
+    Product -->|PostgreSQL| DB[(Shared Database)]
+    Order -->|PostgreSQL| DB
+    Cart -->|PostgreSQL| DB
+    Auth -->|PostgreSQL| DB
+```
+
+### Key Features
+*   **Event-Driven Architecture**: Uses RabbitMQ for asynchronous stock deduction and order processing.
+*   **Resilient Messaging**: Custom broker implementation with automatic reconnection and channel isolation.
+*   **Distributed Transactions**: Implements Saga-like patterns to ensure data consistency across services.
+*   **Clean Architecture**: Modular code structure with clear separation of concerns (Handlers, Repositories, Consumers).
+*   **Search API**: Efficient order lookup capabilities.
+
 ```bash
 D:.
 ├───auth-service
