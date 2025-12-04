@@ -56,36 +56,26 @@ graph TD
     Order --- DB
 ```
 
-### Saga Flow (Order Process)
+### Order Process
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Order as Order Service
-    participant RabbitMQ
     participant Product as Product Service
     
-    User->>Order: Create Order
-    Order->>RabbitMQ: Publish "order.requested"
-    RabbitMQ->>Product: Consume event
+    User->>Order: 1. Create Order (Pending)
+    Order-)Product: 2. Event: "order.requested"
     
     alt Stock Available
-        Product->>Product: Deduct Stock
-        Product-->>RabbitMQ: (Future) Publish "stock.reserved"
+        Product->>Product: 3. Deduct Stock
+        Product-)Order: 4. (Future) Event: "stock.reserved"
     else Stock Insufficient
-        Product->>RabbitMQ: Publish "stock.failed"
-        RabbitMQ->>Order: Consume "stock.failed"
-        Order->>Order: Cancel Order
+        Product-)Order: 4. Event: "stock.failed"
+        Order->>Order: 5. Cancel Order
     end
 ```
 
-### Key Features
-*   **Event-Driven Architecture**: Uses RabbitMQ for asynchronous stock deduction and order processing.
-*   **Resilient Messaging**: Custom broker implementation with automatic reconnection and channel isolation.
-*   **Distributed Transactions**: Implements Saga-like patterns to ensure data consistency across services.
-*   **Redis Caching**: High-performance read-through caching for product data.
-*   **Clean Architecture**: Modular code structure with clear separation of concerns (Handlers, Repositories, Consumers).
-*   **Search API**: Efficient order lookup capabilities.
 
 ```bash
 D:.
