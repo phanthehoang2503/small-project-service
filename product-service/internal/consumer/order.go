@@ -43,9 +43,19 @@ func (c *OrderConsumer) handle(routingKey string, body []byte) error {
 	for _, item := range payload.Items {
 		if err := c.repo.DeductStock(item.ProductID, item.Quantity); err != nil {
 			log.Printf("[product-consumer] failed to deduct stock for product %d: %v", item.ProductID, err)
-			// TODO: Publish stock.failed event to cancel order (compensation)
-			// For now, we just log it. In a real system, we MUST compensate.
-			return err // retry? or fail?
+
+			// Publish stock.failed event to cancel order (compensation)
+			failEvent := message.StockFailed{
+				OrderUUID: payload.OrderUUID,
+				Reason:    err.Error(),
+			}
+			if pubErr := c.b.PublishJSON(event.ExchangeOrder, event.RoutingKeyStockFailed, failEvent); pubErr != nil {
+				log.Printf("[product-consumer] failed to publish stock.failed event: %v", pubErr)
+			} else {
+				log.Printf("[product-consumer] published stock.failed for order %s", payload.OrderUUID)
+			}
+
+			return nil // Return nil to ack the message (we handled the failure by publishing an event)
 		}
 	}
 
