@@ -20,6 +20,14 @@ services:
       - rabbit-data:/var/lib/rabbitmq
     networks: [ backend ]
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks: [ backend ]
+
   logger-service:
     build:
       context: .
@@ -38,6 +46,7 @@ services:
     env_file: .env
     depends_on:
       - db
+      - redis
     ports:
       - "8081:8081"
     networks: [ backend ]
@@ -112,6 +121,7 @@ services:
 volumes:
   db_data:
   rabbit-data:
+  redis-data:
 
 
 networks:
