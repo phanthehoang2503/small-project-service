@@ -27,4 +27,7 @@ const (
 
 	// payment domain
 	RoutingKeyPaymentFailed = "payment.failed"
+
+	// stock domain
+	RoutingKeyStockFailed = "stock.failed"
 )

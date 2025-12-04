@@ -19,3 +19,8 @@ type OrderCreated struct {
 	UserID  uint  `json:"user_id"`
 	Total   int64 `json:"total"`
 }
+
+type StockFailed struct {
+	OrderUUID string `json:"order_uuid"`
+	Reason    string `json:"reason"`
+}
