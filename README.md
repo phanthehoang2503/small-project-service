@@ -12,48 +12,35 @@ All services communicate through REST and RabbitMQ.
 
 ```mermaid
 graph TD
-    subgraph Client [Client Layer]
-        User[User / Client]
-    end
-
-    subgraph Services [Microservices]
-        direction TB
-        Auth[Auth Service]
-        Product[Product Service]
-        Cart[Cart Service]
-        Order[Order Service]
-        Payment[Payment Service]
-        Logger[Logger Service]
-    end
-
-    subgraph Infra [Infrastructure]
-        RabbitMQ
-        DB[(Shared Database)]
-    end
-
-    %% Client Interactions
-    User -->|REST| Auth
-    User -->|REST| Product
-    User -->|REST| Cart
-    User -->|REST| Order
-
-    %% Service-to-Service (Sync)
-    Order -->|REST| Cart
-
-    %% Async Messaging (RabbitMQ)
-    Order -.->|Pub: order.requested| RabbitMQ
-    RabbitMQ -.->|Sub| Product
-    RabbitMQ -.->|Sub| Payment
-    RabbitMQ -.->|Sub| Logger
+    %% Nodes
+    User((User))
+    Broker{RabbitMQ}
     
-    Product -.->|Pub: stock.failed| RabbitMQ
-    RabbitMQ -.->|Sub| Order
+    Auth[Auth Service]
+    Product[Product Service]
+    Cart[Cart Service]
+    Order[Order Service]
+    Payment[Payment Service]
+    Logger[Logger Service]
+    Mailer[Mailer Service]
 
-    %% Database Connections
-    Auth --- DB
-    Product --- DB
-    Cart --- DB
-    Order --- DB
+    %% User Traffic
+    User --> Auth
+    User --> Product
+    User --> Cart
+    User --> Order
+
+    %% Async Events (Publishers)
+    Order -.->|Pub| Broker
+    Product -.->|Pub| Broker
+    Payment -.->|Pub| Broker
+
+    %% Async Events (Consumers)
+    Broker -.->|Sub| Product
+    Broker -.->|Sub| Payment
+    Broker -.->|Sub| Order
+    Broker -.->|Sub| Logger
+    Broker -.->|Sub| Mailer
 ```
 
 ### Order Process
@@ -63,16 +50,28 @@ sequenceDiagram
     participant User
     participant Order as Order Service
     participant Product as Product Service
+    participant Payment as Payment Service
     
     User->>Order: 1. Create Order (Pending)
-    Order-)Product: 2. Event: "order.requested"
     
-    alt Stock Available
+    par Process Order
+        Order-)Product: 2a. Event: "order.requested"
+        Order-)Payment: 2b. Event: "order.requested"
+    end
+    
+    alt Stock Success
         Product->>Product: 3. Deduct Stock
-        Product-)Order: 4. (Future) Event: "stock.reserved"
-    else Stock Insufficient
-        Product-)Order: 4. Event: "stock.failed"
-        Order->>Order: 5. Cancel Order
+    else Stock Failed
+        Product-)Order: 3. Event: "stock.failed"
+        Order->>Order: 4. Cancel Order
+    end
+
+    alt Payment Success
+        Payment-)Order: 3. Event: "order.paid"
+        Order->>Order: 4. Update Status: Paid
+    else Payment Failed
+        Payment-)Order: 3. Event: "payment.failed"
+        Order->>Order: 4. Cancel Order
     end
 ```
 
