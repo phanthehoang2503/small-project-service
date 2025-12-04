@@ -44,7 +44,7 @@ func (c *OrderConsumer) handle(routingKey string, body []byte) error {
 		if err := c.repo.DeductStock(item.ProductID, item.Quantity); err != nil {
 			log.Printf("[product-consumer] failed to deduct stock for product %d: %v", item.ProductID, err)
 
-			// Publish stock.failed event to cancel order (compensation)
+			// Publish stock.failed event to cancel order
 			failEvent := message.StockFailed{
 				OrderUUID: payload.OrderUUID,
 				Reason:    err.Error(),
@@ -55,7 +55,7 @@ func (c *OrderConsumer) handle(routingKey string, body []byte) error {
 				log.Printf("[product-consumer] published stock.failed for order %s", payload.OrderUUID)
 			}
 
-			return nil // Return nil to ack the message (we handled the failure by publishing an event)
+			return nil // Return nil to ack the message
 		}
 	}
 
