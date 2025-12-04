@@ -41,7 +41,7 @@ func ListProducts(r *repo.Database) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /products/{id} [get]
-func GetProducts(r *repo.Database) gin.HandlerFunc {
+func GetProducts(r *repo.Database, cache *repo.CacheRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -50,10 +50,26 @@ func GetProducts(r *repo.Database) gin.HandlerFunc {
 			return
 		}
 
+		// Check Cache
+		if cache != nil {
+			if cached, err := cache.GetProduct(c.Request.Context(), uint(id)); err == nil {
+				logger.Info(c.Request.Context(), "Cache HIT for product "+reqStr)
+				c.JSON(200, cached)
+				return
+			}
+			logger.Info(c.Request.Context(), "Cache MISS for product "+reqStr)
+		}
+
+		// Check DB
 		p, err := r.Get(id) // find the prod id
 		if err != nil {     // in case not found
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
+		}
+
+		// Set Cache
+		if cache != nil {
+			_ = cache.SetProduct(c.Request.Context(), &p)
 		}
 
 		c.JSON(200, p)
@@ -120,7 +136,7 @@ func CreateProducts(r *repo.Database) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /products/{id} [put]
-func UpdateProducts(r *repo.Database) gin.HandlerFunc {
+func UpdateProducts(r *repo.Database, cache *repo.CacheRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -138,6 +154,11 @@ func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()}) // not found = 404
 			return
+		}
+
+		// Invalidate Cache
+		if cache != nil {
+			_ = cache.InvalidateProduct(c.Request.Context(), uint(id))
 		}
 
 		msg := message.ProductMessage{
@@ -163,7 +184,7 @@ func UpdateProducts(r *repo.Database) gin.HandlerFunc {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /products/{id} [delete]
-func DeleteProducts(r *repo.Database) gin.HandlerFunc {
+func DeleteProducts(r *repo.Database, cache *repo.CacheRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqStr := c.Param("id")
 		id, err := strconv.ParseInt(reqStr, 10, 64) // int, error
@@ -173,8 +194,13 @@ func DeleteProducts(r *repo.Database) gin.HandlerFunc {
 		}
 
 		if r.Delete(id) != nil { //Delete return true if deleted an id and vice versa
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
 			return
+		}
+
+		// Invalidate Cache
+		if cache != nil {
+			_ = cache.InvalidateProduct(c.Request.Context(), uint(id))
 		}
 
 		msg := message.ProductMessage{

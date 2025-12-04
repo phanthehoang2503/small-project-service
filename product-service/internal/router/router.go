@@ -7,13 +7,13 @@ import (
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
 )
 
-func RegisterRoutes(r *gin.Engine, s *repo.Database) {
+func RegisterRoutes(r *gin.Engine, s *repo.Database, cache *repo.CacheRepository) {
 	api := r.Group("/products")
 	{
 		api.GET("", handler.ListProducts(s))
-		api.GET("/:id", handler.GetProducts(s))
+		api.GET("/:id", handler.GetProducts(s, cache))
 		api.POST("", handler.CreateProducts(s))
-		api.PUT("/:id", handler.UpdateProducts(s))
-		api.DELETE("/:id", handler.DeleteProducts(s))
+		api.PUT("/:id", handler.UpdateProducts(s, cache))
+		api.DELETE("/:id", handler.DeleteProducts(s, cache))
 	}
 }

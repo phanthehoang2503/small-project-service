@@ -46,9 +46,12 @@ func main() {
 		log.Printf("Failed to start consumer: %v", err)
 	}
 
+	// Redis Cache
+	cacheRepo := repo.NewCacheRepository("redis:6379")
+
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())
-	router.RegisterRoutes(r, productRepo)
+	router.RegisterRoutes(r, productRepo, cacheRepo)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8081")
