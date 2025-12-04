@@ -11,41 +11,6 @@ Each service runs independently with its own routes, database models, and Swagge
 All services communicate through REST and RabbitMQ.
 
 ```mermaid
-graph TD
-    %% Nodes
-    User((User))
-    Broker{RabbitMQ}
-    
-    Auth[Auth Service]
-    Product[Product Service]
-    Cart[Cart Service]
-    Order[Order Service]
-    Payment[Payment Service]
-    Logger[Logger Service]
-    Mailer[Mailer Service]
-
-    %% User Traffic
-    User --> Auth
-    User --> Product
-    User --> Cart
-    User --> Order
-
-    %% Async Events (Publishers)
-    Order -.->|Pub| Broker
-    Product -.->|Pub| Broker
-    Payment -.->|Pub| Broker
-
-    %% Async Events (Consumers)
-    Broker -.->|Sub| Product
-    Broker -.->|Sub| Payment
-    Broker -.->|Sub| Order
-    Broker -.->|Sub| Logger
-    Broker -.->|Sub| Mailer
-```
-
-### Order Process
-
-```mermaid
 sequenceDiagram
     participant User
     participant Order as Order Service
