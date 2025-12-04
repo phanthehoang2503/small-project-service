@@ -24,13 +24,6 @@ sequenceDiagram
         Order-)Payment: 2b. Event: "order.requested"
     end
     
-    alt Stock Success
-        Product->>Product: 3. Deduct Stock
-    else Stock Failed
-        Product-)Order: 3. Event: "stock.failed"
-        Order->>Order: 4. Cancel Order
-    end
-
     alt Payment Success
         Payment-)Order: 3. Event: "order.paid"
         Order->>Order: 4. Update Status: Paid
@@ -39,8 +32,7 @@ sequenceDiagram
         Order->>Order: 4. Cancel Order
     end
 ```
-
-
+### Folder structure
 ```bash
 D:.
 ├───auth-service
@@ -54,6 +46,13 @@ D:.
 ├───payment-service
 └───product-service
 ```
+
+### Key Features
+*   **Event-Driven Architecture**: Uses RabbitMQ for asynchronous processing.
+*   **Distributed Transactions (Saga Pattern)**: Ensures data consistency across services.
+*   **Redis**: Accelerates product data retrieval.
+*   **Resilient Messaging**: Broker automatically reconnects on network loss.
+*   **CI/CD**: Automated build and test with GitHub Actions.
 
 [Product service](product-service/README.md#product-service)  
 [Cart service](cart-service/README.md#cart-service)  
@@ -79,8 +78,8 @@ D:.
 | Service | Port | Description |
 |----------|------|-------------|
 | **PostgreSQL** | 5432 | Main database |
-| **RabbitMQ** | 5672 (15672 UI) | Message broker for async communication |
-| **MailHog** | 1025 (8025 UI) | Email testing tool |
+| **RabbitMQ** | 5672 | Message broker for async communication |
+| **MailHog** | 1025 | Email testing tool |
 
 ---
 
@@ -137,6 +136,45 @@ Learning Go, microservices, Java and JS.
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.
 Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 
+### Quy trình xử lý đơn hàng (Saga Flow)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Order as Order Service
+    participant Product as Product Service
+    participant Payment as Payment Service
+    
+    User->>Order: 1. Tạo đơn hàng (Pending)
+    
+    par Xử lý đơn hàng
+        Order-)Product: 2a. Event: "order.requested"
+        Order-)Payment: 2b. Event: "order.requested"
+    end
+    
+    alt Kho hàng (Stock)
+        Product->>Product: 3. Trừ tồn kho (Thành công)
+    else Hết hàng
+        Product-)Order: 3. Event: "stock.failed"
+        Order->>Order: 4. Hủy đơn hàng
+    end
+
+    alt Thanh toán (Payment)
+        Payment-)Order: 3. Event: "order.paid"
+        Order->>Order: 4. Cập nhật: Đã thanh toán
+    else Lỗi thanh toán
+        Payment-)Order: 3. Event: "payment.failed"
+        Order->>Order: 4. Hủy đơn hàng
+    end
+```
+
+### Về tính năng
+*   **Kiến trúc hướng sự kiện (Event-Driven)**: Sử dụng RabbitMQ để xử lý bất đồng bộ.
+*   **Giao dịch phân tán (Saga Pattern)**: Đảm bảo tính nhất quán dữ liệu giữa các service.
+*   **Redis**: Tăng tốc độ đọc dữ liệu sản phẩm.
+*   **Resilient**: Broker tự động kết nối lại khi mất mạng, đảm bảo không mất tin nhắn.
+*   **CI/CD**: Tự động build và test với GitHub Actions.
+
 ---
 
 ### Các service hiện có
@@ -155,8 +193,8 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 | Service | Port | Mô tả |
 |----------|------|-------|
 | **PostgreSQL** | 5432 | CSDL |
-| **RabbitMQ** | 5672 (15672 UI) | Message |
-| **MailHog** | 1025 (8025 UI) | Dùng để test email |
+| **RabbitMQ** | 5672 | Message |
+| **MailHog** | 1025 | Dùng để test email |
 
 ---
 
@@ -170,6 +208,7 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 - **Live Reload:** Air
 - **Xác thực:** JWT
 - **Messaging:** RabbitMQ
+- **Caching:** Redis
 
 ---
 
