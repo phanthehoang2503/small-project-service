@@ -65,6 +65,22 @@ func main() {
 	}
 	log.Println("[order-service] payment consumer started")
 
+	// Saga Compensation (when failing)
+	stockQueue := "stock_failed_queue"
+	if err := b.DeclareQueue(stockQueue); err != nil {
+		log.Fatalf("failed to declare stock queue: %v", err)
+	}
+	if err := b.BindQueue(stockQueue, event.ExchangeOrder, []string{event.RoutingKeyStockFailed}); err != nil {
+		log.Fatalf("failed to bind stock queue: %v", err)
+	}
+
+	// Start stock consumer
+	stockConsumer := consumer.NewStockConsumer(s, b)
+	if err := stockConsumer.Start(stockQueue); err != nil {
+		log.Fatalf("failed to start stock consumer: %v", err)
+	}
+	log.Println("[order-service] stock consumer started")
+
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())
