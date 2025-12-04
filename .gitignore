@@ -1,7 +1,7 @@
 .env
 .db-data
 
-front-end/*
+frontend/*
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go
 
