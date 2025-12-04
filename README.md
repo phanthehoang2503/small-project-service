@@ -11,29 +11,79 @@ Each service runs independently with its own routes, database models, and Swagge
 All services communicate through REST and RabbitMQ.
 
 ```mermaid
-graph TD;
-    User[User / Client] -->|REST| Auth[Auth Service]
-    User -->|REST| Product[Product Service]
-    User -->|REST| Cart[Cart Service]
-    User -->|REST| Order[Order Service]
-    
+graph TD
+    subgraph Client [Client Layer]
+        User[User / Client]
+    end
+
+    subgraph Services [Microservices]
+        direction TB
+        Auth[Auth Service]
+        Product[Product Service]
+        Cart[Cart Service]
+        Order[Order Service]
+        Payment[Payment Service]
+        Logger[Logger Service]
+    end
+
+    subgraph Infra [Infrastructure]
+        RabbitMQ
+        DB[(Shared Database)]
+    end
+
+    %% Client Interactions
+    User -->|REST| Auth
+    User -->|REST| Product
+    User -->|REST| Cart
+    User -->|REST| Order
+
+    %% Service-to-Service (Sync)
     Order -->|REST| Cart
-    Order -->|Publish order.requested| RabbitMQ
+
+    %% Async Messaging (RabbitMQ)
+    Order -.->|Pub: order.requested| RabbitMQ
+    RabbitMQ -.->|Sub| Product
+    RabbitMQ -.->|Sub| Payment
+    RabbitMQ -.->|Sub| Logger
     
-    RabbitMQ -->|Consume| Product
-    RabbitMQ -->|Consume| Payment[Payment Service]
-    RabbitMQ -->|Consume| Logger[Logger Service]
+    Product -.->|Pub: stock.failed| RabbitMQ
+    RabbitMQ -.->|Sub| Order
+
+    %% Database Connections
+    Auth --- DB
+    Product --- DB
+    Cart --- DB
+    Order --- DB
+```
+
+### Saga Flow (Order Process)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Order as Order Service
+    participant RabbitMQ
+    participant Product as Product Service
     
-    Product -->|PostgreSQL| DB[(Shared Database)]
-    Order -->|PostgreSQL| DB
-    Cart -->|PostgreSQL| DB
-    Auth -->|PostgreSQL| DB
+    User->>Order: Create Order
+    Order->>RabbitMQ: Publish "order.requested"
+    RabbitMQ->>Product: Consume event
+    
+    alt Stock Available
+        Product->>Product: Deduct Stock
+        Product-->>RabbitMQ: (Future) Publish "stock.reserved"
+    else Stock Insufficient
+        Product->>RabbitMQ: Publish "stock.failed"
+        RabbitMQ->>Order: Consume "stock.failed"
+        Order->>Order: Cancel Order
+    end
 ```
 
 ### Key Features
 *   **Event-Driven Architecture**: Uses RabbitMQ for asynchronous stock deduction and order processing.
 *   **Resilient Messaging**: Custom broker implementation with automatic reconnection and channel isolation.
 *   **Distributed Transactions**: Implements Saga-like patterns to ensure data consistency across services.
+*   **Redis Caching**: High-performance read-through caching for product data.
 *   **Clean Architecture**: Modular code structure with clear separation of concerns (Handlers, Repositories, Consumers).
 *   **Search API**: Efficient order lookup capabilities.
 
@@ -90,6 +140,7 @@ D:.
 - **Live Reload:** Air
 - **Authentication:** JWT
 - **Messaging:** RabbitMQ
+- **Caching:** Redis
 
 ---
 
