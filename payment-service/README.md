@@ -1,27 +1,29 @@
 ## payment-service
 
-This service handles payment processing for the small-project microservices system.
+This service handles payment processing (mocked) for orders.
 
 ### Overview
 
-The `payment-service` provides endpoints to process payments for orders. It integrates with the `order-service` to update order status upon successful payment. Entrypoint: `cmd/api/main.go`. Internals follow the standard project layout: `internal/handler`, `internal/model`, `internal/repo`, and `internal/router`. Swagger docs are available in `docs/`.
+The `payment-service` is a background worker that listens for order requests. It simulates a payment gateway interaction and updates the order status.
 
-### Prerequisites
-
-- Go 1.20+
-- Docker & Docker Compose
+**Key Features:**
+*   **Mock Payment Gateway**: Simulates success/failure scenarios.
+*   **Saga Participant**: Publishes success/failure events to drive the order workflow.
 
 ### Run locally
+
+From repository root:
 
 ```powershell
 cd payment-service/cmd/api
 go run .
 ```
 
-### API Endpoints
+### Events
 
-- POST /payments — process a payment for an order
+- **Consumes**: `order.requested`
+- **Publishes**: `order.paid`, `payment.failed`
 
 ### Swagger / API docs
 
-http://localhost:8085/swagger/index.html#/Payment
+http://localhost:8086/swagger/index.html

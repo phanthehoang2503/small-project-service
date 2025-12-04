@@ -1,21 +1,18 @@
 ## auth-service
 
-This service handles authentication and user management for the small-project
-microservices system.
+This service handles user authentication and authorization.
 
 ### Overview
 
-The `auth-service` provides endpoints for user registration, login, token
-issuance, and basic user CRUD operations. Entry point is `cmd/api/main.go` and
-the service uses `internal/handler`, `internal/model`, `internal/repo`, and
-`internal/router` packages. Swagger docs are available under `docs/`.
+The `auth-service` manages user registration and login. It issues **JWT (JSON Web Tokens)** that are used to authenticate requests to other services.
 
-### Prerequisites
-
-- Go 1.20+ installed
-- Docker & Docker Compose
+**Key Features:**
+*   **JWT Issuance**: Secure stateless authentication.
+*   **Password Hashing**: Uses bcrypt for security.
 
 ### Run locally
+
+From repository root:
 
 ```powershell
 cd auth-service/cmd/api
@@ -24,9 +21,8 @@ go run .
 
 ### API Endpoints
 
-- POST /auth/register — register a new user
-- POST /auth/login — obtain JWT
-- GET /users/{id} — get user details
+- POST /auth/register — register new user
+- POST /auth/login — login and get JWT token
 
 ### Swagger / API docs
 

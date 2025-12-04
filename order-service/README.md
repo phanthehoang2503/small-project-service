@@ -1,37 +1,39 @@
 ## order-service
 
-This service handles order creation and order lifecycle for the small-project
-microservices system.
+This service handles order placement, retrieval, and status management. It is the central coordinator for the **Saga Pattern**.
 
 ### Overview
 
-The `order-service` implements endpoints for creating orders, listing orders,
-and retrieving order details. It follows the common project layout with an
-entrypoint at `cmd/api/main.go` and internal packages for handlers, models,
-repositories, and routing. Swagger docs are under `docs/`.
+The `order-service` is a Go HTTP API that manages the lifecycle of orders. It communicates with `product-service` and `payment-service` via RabbitMQ to ensure data consistency.
 
-### RabbitMQ Integration
-
-- **Publisher**: Publishes `order.requested` event to `order_exchange` when a new order is created. This triggers the `cart-service` to clear the user's cart.
-
-### Prerequisites
-
-- Go 1.20+
-- Docker & Docker Compose 
+**Key Features:**
+*   **Saga Orchestration**: Manages the order flow (Pending -> Paid/Cancelled).
+*   **Compensation Logic**: Listens for `stock.failed` and `payment.failed` to cancel orders.
+*   **Search API**: Allows looking up orders by numeric ID.
 
 ### Run locally
+
+From repository root:
 
 ```powershell
 cd order-service/cmd/api
 go run .
 ```
 
-### API Endpoints 
+Ensure RabbitMQ and Postgres are running.
 
-- POST /orders — create a new order
-- GET /orders/{id} — get order by id
-- GET /orders?userId={userId} — list user orders
+### API Endpoints
+
+- GET /orders — list orders (User specific)
+- GET /orders/{id} — get order by UUID
+- GET /orders/search?id={id} — get order by numeric ID
+- POST /orders — create order (Triggers `order.requested` event)
+
+### Events
+
+- **Publishes**: `order.requested`
+- **Consumes**: `order.paid`, `payment.failed`, `stock.failed`
 
 ### Swagger / API docs
 
-http://localhost:8082/swagger/index.html#/Order/
+http://localhost:8083/swagger/index.html#/Orders/

@@ -14,8 +14,8 @@ type Broker struct {
 	url          string
 	conn         *amqp.Connection
 	mu           sync.Mutex
-	pubChan      *amqp.Channel // Dedicated channel for publishing
-	pubChanMutex sync.Mutex    // Protects pubChan access
+	pubChan      *amqp.Channel
+	pubChanMutex sync.Mutex
 }
 
 var Global *Broker
@@ -110,7 +110,6 @@ func (b *Broker) getPubChannel() (*amqp.Channel, error) {
 		return nil, errors.New("connection closed")
 	}
 	if b.pubChan == nil || b.pubChan.IsClosed() {
-		// Try to recreate channel if connection is open but channel is closed
 		ch, err := b.conn.Channel()
 		if err != nil {
 			return nil, err
@@ -232,9 +231,6 @@ func (b *Broker) Consume(queue string, handler func(routingKey string, body []by
 			_ = msg.Ack(false)
 		}
 		log.Printf("RabbitMQ: consumer for queue %q stopped", queue)
-		// Note: If the connection dies, this loop ends.
-		// The consumer needs to be restarted.
-		// For now, we rely on the service crashing/restarting or advanced consumer supervision (out of scope for this refactor).
 	}()
 
 	return nil
