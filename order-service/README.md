@@ -6,11 +6,6 @@ This service handles order placement, retrieval, and status management. It is th
 
 The `order-service` is a Go HTTP API that manages the lifecycle of orders. It communicates with `product-service` and `payment-service` via RabbitMQ to ensure data consistency.
 
-**Key Features:**
-*   **Saga Orchestration**: Manages the order flow (Pending -> Paid/Cancelled).
-*   **Compensation Logic**: Listens for `stock.failed` and `payment.failed` to cancel orders.
-*   **Search API**: Allows looking up orders by numeric ID.
-
 ### Run locally
 
 From repository root:

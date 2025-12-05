@@ -82,6 +82,7 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&cartItems); err != nil {
+			log.Printf("Failed to decode cart response: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid response from cart service"})
 			return
 		}
