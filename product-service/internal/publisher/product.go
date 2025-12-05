@@ -17,7 +17,7 @@ func PublishProductCreated(ctx context.Context, p *model.Product) error {
 		Stock: p.Stock,
 	}
 
-	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductCreated, msg)
+	return publishJSON(ctx, event.ExchangeProduct, event.RoutingKeyProductCreated, msg)
 }
 
 func PublishProductUpdated(ctx context.Context, p *model.Product) error {
@@ -28,7 +28,7 @@ func PublishProductUpdated(ctx context.Context, p *model.Product) error {
 		Stock: p.Stock,
 	}
 
-	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductUpdated, msg)
+	return publishJSON(ctx, event.ExchangeProduct, event.RoutingKeyProductUpdated, msg)
 }
 
 func PublishProductDeleted(ctx context.Context, id uint) error {
@@ -36,9 +36,9 @@ func PublishProductDeleted(ctx context.Context, id uint) error {
 		ID: id,
 	}
 
-	return publishJSON(event.ExchangeProduct, event.RoutingKeyProductDeleted, msg)
+	return publishJSON(ctx, event.ExchangeProduct, event.RoutingKeyProductDeleted, msg)
 }
 
-func publishJSON(exchange, rk string, payload any) error {
-	return broker.Global.PublishJSON(exchange, rk, payload)
+func publishJSON(ctx context.Context, exchange, rk string, payload any) error {
+	return broker.Global.PublishJSON(ctx, exchange, rk, payload)
 }

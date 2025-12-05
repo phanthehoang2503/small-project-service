@@ -114,7 +114,7 @@ func CreateProducts(r *repo.Database) gin.HandlerFunc {
 				Price: newProd.Price,
 				Stock: newProd.Stock,
 			}
-			if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductCreated, msg); err != nil {
+			if err := broker.PublishJSON(c.Request.Context(), event.ExchangeProduct, event.RoutingKeyProductCreated, msg); err != nil {
 				logger.Error(c.Request.Context(), "failed to publish product.created: "+err.Error())
 			}
 		}
@@ -167,7 +167,7 @@ func UpdateProducts(r *repo.Database, cache *repo.CacheRepository) gin.HandlerFu
 			Price: updated.Price,
 			Stock: updated.Stock,
 		}
-		if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductUpdated, msg); err != nil {
+		if err := broker.PublishJSON(c.Request.Context(), event.ExchangeProduct, event.RoutingKeyProductUpdated, msg); err != nil {
 			logger.Error(c.Request.Context(), "failed to publish product.updated: "+err.Error())
 		}
 
@@ -206,7 +206,7 @@ func DeleteProducts(r *repo.Database, cache *repo.CacheRepository) gin.HandlerFu
 		msg := message.ProductMessage{
 			ID: uint(id),
 		}
-		if err := broker.PublishJSON(event.ExchangeProduct, event.RoutingKeyProductDeleted, msg); err != nil {
+		if err := broker.PublishJSON(c.Request.Context(), event.ExchangeProduct, event.RoutingKeyProductDeleted, msg); err != nil {
 			logger.Error(c.Request.Context(), "failed to publish product.deleted: "+err.Error())
 		}
 

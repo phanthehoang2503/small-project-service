@@ -52,6 +52,7 @@ D:.
 *   **Distributed Transactions (Saga Pattern)**: Ensures data consistency across services.
 *   **Redis**: Accelerates product data retrieval.
 *   **Resilient Messaging**: Broker automatically reconnects on network loss.
+*   **Observability**: Centralized logging with Grafana Loki.
 *   **CI/CD**: Automated build and test with GitHub Actions.
 
 [Product service](product-service/README.md#product-service)  
@@ -94,6 +95,7 @@ D:.
 - **Authentication:** JWT
 - **Messaging:** RabbitMQ
 - **Caching:** Redis
+- **Observability:** Grafana, Loki, Promtail
 
 ---
 
@@ -136,43 +138,12 @@ Learning Go, microservices, Java and JS.
 Mỗi service chạy độc lập, có route, model, và tài liệu Swagger riêng.
 Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 
-### Quy trình xử lý đơn hàng (Saga Flow)
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Order as Order Service
-    participant Product as Product Service
-    participant Payment as Payment Service
-    
-    User->>Order: 1. Tạo đơn hàng (Pending)
-    
-    par Xử lý đơn hàng
-        Order-)Product: 2a. Event: "order.requested"
-        Order-)Payment: 2b. Event: "order.requested"
-    end
-    
-    alt Kho hàng (Stock)
-        Product->>Product: 3. Trừ tồn kho (Thành công)
-    else Hết hàng
-        Product-)Order: 3. Event: "stock.failed"
-        Order->>Order: 4. Hủy đơn hàng
-    end
-
-    alt Thanh toán (Payment)
-        Payment-)Order: 3. Event: "order.paid"
-        Order->>Order: 4. Cập nhật: Đã thanh toán
-    else Lỗi thanh toán
-        Payment-)Order: 3. Event: "payment.failed"
-        Order->>Order: 4. Hủy đơn hàng
-    end
-```
-
 ### Về tính năng
-*   **Kiến trúc hướng sự kiện (Event-Driven)**: Sử dụng RabbitMQ để xử lý bất đồng bộ.
-*   **Giao dịch phân tán (Saga Pattern)**: Đảm bảo tính nhất quán dữ liệu giữa các service.
-*   **Redis**: Tăng tốc độ đọc dữ liệu sản phẩm.
+*   **Kiến trúc hướng sự kiện**: Sử dụng RabbitMQ để xử lý bất đồng bộ.
+*   **Giao dịch phân tán**: Đảm bảo tính nhất quán dữ liệu giữa các service.
+*   **Cache**: Tăng tốc độ đọc dữ liệu sản phẩm.
 *   **Resilient**: Broker tự động kết nối lại khi mất mạng, đảm bảo không mất tin nhắn.
+*   **Giám sát (Observability)**: Ghi log tập trung với Grafana Loki.
 *   **CI/CD**: Tự động build và test với GitHub Actions.
 
 ---
@@ -208,7 +179,8 @@ sequenceDiagram
 - **Live Reload:** Air
 - **Xác thực:** JWT
 - **Messaging:** RabbitMQ
-- **Caching:** Redis
+- **Cache:** Redis
+- **Giám sát:** Grafana, Loki, Promtail
 
 ---
 

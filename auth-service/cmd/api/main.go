@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/internal/telemetry"
 	"gorm.io/gorm"
 
 	_ "github.com/phanthehoang2503/small-project/auth-service/docs"
@@ -27,6 +29,14 @@ import (
 // @host localhost:8084
 // @BasePath /
 func main() {
+	// Init Tracer
+	shutdown := telemetry.InitTracer("auth-service", "localhost:4317")
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer: %v", err)
+		}
+	}()
+
 	_ = godotenv.Load()
 
 	db := DbConnect()

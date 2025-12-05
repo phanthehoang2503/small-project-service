@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
@@ -26,7 +27,7 @@ func (c *OrderConsumer) Start(queueName string) error {
 	return c.b.Consume(queueName, c.handle)
 }
 
-func (c *OrderConsumer) handle(routingKey string, body []byte) error {
+func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
 	if routingKey != event.RoutingKeyOrderRequested {
 		return nil
 	}
@@ -49,7 +50,7 @@ func (c *OrderConsumer) handle(routingKey string, body []byte) error {
 				OrderUUID: payload.OrderUUID,
 				Reason:    err.Error(),
 			}
-			if pubErr := c.b.PublishJSON(event.ExchangeOrder, event.RoutingKeyStockFailed, failEvent); pubErr != nil {
+			if pubErr := c.b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyStockFailed, failEvent); pubErr != nil {
 				log.Printf("[product-consumer] failed to publish stock.failed event: %v", pubErr)
 			} else {
 				log.Printf("[product-consumer] published stock.failed for order %s", payload.OrderUUID)

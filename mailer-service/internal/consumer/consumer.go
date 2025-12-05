@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,7 +23,7 @@ func (c *MailerConsumer) Start(queueName string) error {
 	return c.b.Consume(queueName, c.handle)
 }
 
-func (c *MailerConsumer) handle(routingKey string, body []byte) error {
+func (c *MailerConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
 	if routingKey == event.RoutingKeyOrderPaid {
 		return c.handleOrderPaid(body)
 	}

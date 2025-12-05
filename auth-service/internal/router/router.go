@@ -4,9 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/auth-service/internal/handler"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func RegisterRoutes(r *gin.Engine, h *handler.AuthHandler, jwtSecret []byte) {
+	r.Use(otelgin.Middleware("auth-service"))
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/register", h.Register)

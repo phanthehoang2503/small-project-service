@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/internal/telemetry"
 
 	_ "github.com/phanthehoang2503/small-project/cart-service/docs"
 	swaggerFiles "github.com/swaggo/files"
@@ -29,6 +31,14 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	// Init Tracer
+	shutdown := telemetry.InitTracer("cart-service", "localhost:4317")
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer: %v", err)
+		}
+	}()
+
 	godotenv.Load()
 
 	db, err := database.ConnectDB()

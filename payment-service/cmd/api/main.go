@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/internal/telemetry"
 
 	"github.com/phanthehoang2503/small-project/payment-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/model"
@@ -18,6 +21,14 @@ import (
 )
 
 func main() {
+	// Init Tracer
+	shutdown := telemetry.InitTracer("payment-service", "localhost:4317")
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer: %v", err)
+		}
+	}()
+
 	godotenv.Load()
 
 	db, err := database.ConnectDB()
@@ -59,6 +70,7 @@ func main() {
 	// small HTTP API for payment lookup
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())
+	r.Use(otelgin.Middleware("payment-service"))
 	r.GET("/payments/:order_uuid", func(c *gin.Context) {
 		orderUUID := c.Param("order_uuid")
 		p, err := payRepo.GetByOrderUUID(orderUUID)

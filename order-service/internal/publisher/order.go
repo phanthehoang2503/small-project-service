@@ -1,6 +1,7 @@
 package publisher
 
 import (
+	"context"
 	"log"
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
@@ -8,7 +9,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/message"
 )
 
-func PublishOrderRequested(b *broker.Broker, correlationID, orderUUID string, userID uint, total int64, currency string, items []message.OrderItem) error {
+func PublishOrderRequested(ctx context.Context, b *broker.Broker, correlationID, orderUUID string, userID uint, total int64, currency string, items []message.OrderItem) error {
 	payload := message.OrderRequested{
 		CorrelationID: correlationID,
 		OrderUUID:     orderUUID,
@@ -18,7 +19,7 @@ func PublishOrderRequested(b *broker.Broker, correlationID, orderUUID string, us
 		Items:         items,
 	}
 
-	if err := b.PublishJSON(event.ExchangeOrder, event.RoutingKeyOrderRequested, payload); err != nil {
+	if err := b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyOrderRequested, payload); err != nil {
 		log.Printf("[order-publisher] failed to publish order.requested: %v", err)
 		return err
 	}

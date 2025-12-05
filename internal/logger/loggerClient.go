@@ -17,7 +17,7 @@ func SetService(name string) {
 	}
 }
 
-func send(_ context.Context, level, msg string) {
+func send(ctx context.Context, level, msg string) {
 	ev := message.LogEvent{
 		Level:   level,
 		Service: service,
@@ -37,7 +37,7 @@ func send(_ context.Context, level, msg string) {
 		routingKey = "log." + level
 	}
 
-	_ = broker.PublishJSON(event.ExchangeLogs, routingKey, ev)
+	_ = broker.PublishJSON(ctx, event.ExchangeLogs, routingKey, ev)
 }
 
 func Info(ctx context.Context, msg string)  { send(ctx, "info", msg) }

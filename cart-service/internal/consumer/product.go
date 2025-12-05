@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -33,7 +34,7 @@ func (pc *ProductConsumer) Start(exchange, queue, binding string) error {
 		return fmt.Errorf("failed to bind queue: %w", err)
 	}
 
-	return broker.Consume(queue, func(routingKey string, body []byte) error {
+	return broker.Consume(queue, func(ctx context.Context, routingKey string, body []byte) error {
 		var ev message.ProductMessage
 		if err := json.Unmarshal(body, &ev); err != nil {
 			log.Println("cart-service: failed to parse product event:", err)

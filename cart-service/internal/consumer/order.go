@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -50,7 +51,7 @@ type orderRequestedPayload struct {
 	Currency      string `json:"currency"`
 }
 
-func (c *OrderConsumer) handleOrderRequested(routingKey string, body []byte) error {
+func (c *OrderConsumer) handleOrderRequested(ctx context.Context, routingKey string, body []byte) error {
 	var payload orderRequestedPayload
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)

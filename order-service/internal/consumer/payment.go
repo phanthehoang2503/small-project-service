@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"time"
@@ -36,7 +37,7 @@ func (c *OrderPaidConsumer) Start(queueName string) error {
 	return c.b.Consume(queueName, c.handle)
 }
 
-func (c *OrderPaidConsumer) handle(routingKey string, body []byte) error {
+func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
 	if routingKey == event.RoutingKeyPaymentFailed {
 		return c.handlePaymentFailed(body)
 	}

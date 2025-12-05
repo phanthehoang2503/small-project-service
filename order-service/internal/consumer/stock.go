@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
@@ -26,7 +27,7 @@ func (c *StockConsumer) Start(queueName string) error {
 	return c.b.Consume(queueName, c.handle)
 }
 
-func (c *StockConsumer) handle(routingKey string, body []byte) error {
+func (c *StockConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
 	if routingKey != event.RoutingKeyStockFailed {
 		return nil
 	}

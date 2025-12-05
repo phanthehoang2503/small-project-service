@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -8,6 +9,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/internal/telemetry"
 	_ "github.com/phanthehoang2503/small-project/product-service/docs"
 	"github.com/phanthehoang2503/small-project/product-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/product-service/internal/model"
@@ -23,6 +25,14 @@ import (
 // @host localhost:8081
 // @BasePath /
 func main() {
+	// Init Tracer
+	shutdown := telemetry.InitTracer("product-service", "localhost:4317")
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer: %v", err)
+		}
+	}()
+
 	//DB
 	db, err := database.ConnectDB() //connect to db
 	if err != nil {

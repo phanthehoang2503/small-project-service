@@ -134,7 +134,7 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 					Quantity:  i.Quantity,
 				})
 			}
-			if err := publisher.PublishOrderRequested(b, created.UUID, created.UUID, created.UserID, created.Total, "VND", msgItems); err != nil {
+			if err := publisher.PublishOrderRequested(c.Request.Context(), b, created.UUID, created.UUID, created.UserID, created.Total, "VND", msgItems); err != nil {
 				log.Printf("failed to publish order requested event: %v", err)
 			}
 		}

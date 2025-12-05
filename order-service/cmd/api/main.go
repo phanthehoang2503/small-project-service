@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/phanthehoang2503/small-project/internal/database"
@@ -11,6 +13,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
+	"github.com/phanthehoang2503/small-project/internal/telemetry"
 	"github.com/phanthehoang2503/small-project/order-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
@@ -30,6 +33,14 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	// Init Tracer
+	shutdown := telemetry.InitTracer("order-service", "localhost:4317")
+	defer func() {
+		if err := shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer: %v", err)
+		}
+	}()
+
 	godotenv.Load()
 	db, err := database.ConnectDB() //connect to db
 	if err != nil {

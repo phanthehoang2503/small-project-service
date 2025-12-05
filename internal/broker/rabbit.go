@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 )
 
 type Broker struct {
@@ -159,12 +161,16 @@ func (b *Broker) BindQueue(queue, exchange string, routingKeys []string) error {
 	return nil
 }
 
-// PublishJSON publishes a JSON payload.
-func (b *Broker) PublishJSON(exchange, routingKey string, payload any) error {
+// PublishJSON publishes a JSON payload with Context Propagation.
+func (b *Broker) PublishJSON(ctx context.Context, exchange, routingKey string, payload any) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
+
+	// Inject Trace Context
+	headers := make(amqp.Table)
+	otel.GetTextMapPropagator().Inject(ctx, AMQPCarrier(headers))
 
 	// Retry logic for publishing
 	for i := 0; i < 3; i++ {
@@ -183,6 +189,7 @@ func (b *Broker) PublishJSON(exchange, routingKey string, payload any) error {
 			amqp.Publishing{
 				ContentType: "application/json",
 				Body:        body,
+				Headers:     headers,
 				Timestamp:   time.Now(),
 			},
 		)
@@ -198,7 +205,7 @@ func (b *Broker) PublishJSON(exchange, routingKey string, payload any) error {
 }
 
 // Consume starts consuming messages using a NEW dedicated channel.
-func (b *Broker) Consume(queue string, handler func(routingKey string, body []byte) error) error {
+func (b *Broker) Consume(queue string, handler func(ctx context.Context, routingKey string, body []byte) error) error {
 	b.mu.Lock()
 	if b.conn == nil || b.conn.IsClosed() {
 		b.mu.Unlock()
@@ -224,7 +231,13 @@ func (b *Broker) Consume(queue string, handler func(routingKey string, body []by
 	go func() {
 		log.Printf("RabbitMQ: consuming from queue %q", queue)
 		for msg := range msgs {
-			if err := handler(msg.RoutingKey, msg.Body); err != nil {
+			// Extract Trace Context
+			if msg.Headers == nil {
+				msg.Headers = make(amqp.Table)
+			}
+			ctx := otel.GetTextMapPropagator().Extract(context.Background(), AMQPCarrier(msg.Headers))
+
+			if err := handler(ctx, msg.RoutingKey, msg.Body); err != nil {
 				_ = msg.Nack(false, true)
 				continue
 			}
@@ -268,14 +281,14 @@ func BindQueue(queue, exchange string, keys []string) error {
 	return Global.BindQueue(queue, exchange, keys)
 }
 
-func PublishJSON(exchange, routingKey string, payload any) error {
+func PublishJSON(ctx context.Context, exchange, routingKey string, payload any) error {
 	if Global == nil {
 		return errors.New("global broker not initialized")
 	}
-	return Global.PublishJSON(exchange, routingKey, payload)
+	return Global.PublishJSON(ctx, exchange, routingKey, payload)
 }
 
-func Consume(queue string, handler func(routingKey string, body []byte) error) error {
+func Consume(queue string, handler func(ctx context.Context, routingKey string, body []byte) error) error {
 	if Global == nil {
 		return errors.New("global broker not initialized")
 	}
@@ -288,4 +301,28 @@ func Channel() *amqp.Channel {
 	}
 	ch, _ := Global.getPubChannel()
 	return ch
+}
+
+// AMQPCarrier adapts amqp.Table to propagation.TextMapCarrier
+type AMQPCarrier amqp.Table
+
+func (c AMQPCarrier) Get(key string) string {
+	if v, ok := c[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func (c AMQPCarrier) Set(key string, value string) {
+	c[key] = value
+}
+
+func (c AMQPCarrier) Keys() []string {
+	keys := make([]string, 0, len(c))
+	for k := range c {
+		keys = append(keys, k)
+	}
+	return keys
 }

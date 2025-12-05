@@ -6,9 +6,11 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/middleware"
 	"github.com/phanthehoang2503/small-project/order-service/internal/handler"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func RegisterRoutes(r *gin.Engine, s *repo.OrderRepo, b *broker.Broker, jwtSecret []byte) {
+	r.Use(otelgin.Middleware("order-service"))
 	api := r.Group("/orders")
 	api.Use(middleware.JWTMiddleware(jwtSecret))
 	{
