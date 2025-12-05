@@ -6,10 +6,6 @@ This service manages user shopping carts. It maintains a local copy of product d
 
 The `cart-service` allows users to add, remove, and view items in their cart. It listens to product events to keep its local product data in sync with the `product-service`.
 
-**Key Features:**
-*   **Event-Driven Sync**: Updates local product table when `product-service` publishes changes.
-*   **User Isolation**: Carts are linked to User IDs.
-
 ### Run locally
 
 From repository root:

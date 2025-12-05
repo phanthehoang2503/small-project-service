@@ -1,4 +1,4 @@
-## auth-service
+# auth-service
 
 This service handles user authentication and authorization.
 
@@ -6,9 +6,6 @@ This service handles user authentication and authorization.
 
 The `auth-service` manages user registration and login. It issues **JWT (JSON Web Tokens)** that are used to authenticate requests to other services.
 
-**Key Features:**
-*   **JWT Issuance**: Secure stateless authentication.
-*   **Password Hashing**: Uses bcrypt for security.
 
 ### Run locally
 

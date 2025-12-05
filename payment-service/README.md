@@ -6,10 +6,6 @@ This service handles payment processing (mocked) for orders.
 
 The `payment-service` is a background worker that listens for order requests. It simulates a payment gateway interaction and updates the order status.
 
-**Key Features:**
-*   **Mock Payment Gateway**: Simulates success/failure scenarios.
-*   **Saga Participant**: Publishes success/failure events to drive the order workflow.
-
 ### Run locally
 
 From repository root:

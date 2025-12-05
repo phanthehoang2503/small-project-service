@@ -218,7 +218,7 @@ func GetCart(r *repo.CartRepo) gin.HandlerFunc {
 			return
 		}
 
-		var resp []CartResponse
+		resp := make([]CartResponse, 0)
 		for _, it := range items {
 			resp = append(resp, CartResponse{
 				ID:        it.ID,
