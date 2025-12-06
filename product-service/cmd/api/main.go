@@ -50,14 +50,24 @@ func main() {
 
 	logger.SetService("product-service")
 
-	// Start Consumer
-	orderConsumer := consumer.NewOrderConsumer(productRepo, b)
-	if err := orderConsumer.Start("product_order_events"); err != nil {
-		log.Printf("Failed to start consumer: %v", err)
-	}
-
 	// Redis Cache
 	cacheRepo := repo.NewCacheRepository("redis:6379")
+
+	// Setup Queue & Binding
+	queueName := "product_order_events"
+	if err := b.DeclareQueue(queueName); err != nil {
+		log.Fatalf("Failed to declare queue: %v", err)
+	}
+	// Bind to Order Exchange to listen for order.requested
+	if err := b.BindQueue(queueName, "order_exchange", []string{"order.requested"}); err != nil {
+		log.Fatalf("Failed to bind queue: %v", err)
+	}
+
+	// Start Consumer
+	orderConsumer := consumer.NewOrderConsumer(productRepo, cacheRepo, b)
+	if err := orderConsumer.Start(queueName); err != nil {
+		log.Printf("Failed to start consumer: %v", err)
+	}
 
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())

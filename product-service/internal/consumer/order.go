@@ -12,14 +12,16 @@ import (
 )
 
 type OrderConsumer struct {
-	repo *repo.Database
-	b    *broker.Broker
+	repo  *repo.Database
+	cache *repo.CacheRepository
+	b     *broker.Broker
 }
 
-func NewOrderConsumer(r *repo.Database, b *broker.Broker) *OrderConsumer {
+func NewOrderConsumer(r *repo.Database, c *repo.CacheRepository, b *broker.Broker) *OrderConsumer {
 	return &OrderConsumer{
-		repo: r,
-		b:    b,
+		repo:  r,
+		cache: c,
+		b:     b,
 	}
 }
 
@@ -57,6 +59,15 @@ func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []by
 			}
 
 			return nil // Return nil to ack the message
+		}
+
+		// Invalidate Cache
+		if c.cache != nil {
+			if err := c.cache.InvalidateProduct(ctx, item.ProductID); err != nil {
+				log.Printf("[product-consumer] failed to invalidate cache for product %d: %v", item.ProductID, err)
+			} else {
+				log.Printf("[product-consumer] invalidated cache for product %d", item.ProductID)
+			}
 		}
 	}
 
