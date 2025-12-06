@@ -63,13 +63,31 @@ func main() {
 	cr := repo.NewCartRepo(db)
 	pr := repo.NewProductRepo(db)
 
+	// Setup Product Queue
+	prodQueue := "cart_products_queue"
+	if err := b.DeclareQueue(prodQueue); err != nil {
+		log.Fatalf("failed to declare product queue: %v", err)
+	}
+	if err := b.BindQueue(prodQueue, event.ExchangeProduct, []string{"product.*"}); err != nil {
+		log.Fatalf("failed to bind product queue: %v", err)
+	}
+
 	pc := consumer.NewProductConsumer(pr)
-	if err := pc.Start(event.ExchangeProduct, "cart_products_queue", "product.*"); err != nil {
+	if err := pc.Start(event.ExchangeProduct, prodQueue, "product.*"); err != nil {
 		log.Fatalf("failed to start product consumer: %v", err)
 	}
 
+	// Setup Order Queue
+	orderQueue := "cart_orders_queue"
+	if err := b.DeclareQueue(orderQueue); err != nil {
+		log.Fatalf("failed to declare order queue: %v", err)
+	}
+	if err := b.BindQueue(orderQueue, event.ExchangeOrder, []string{event.RoutingKeyOrderRequested}); err != nil {
+		log.Fatalf("failed to bind order queue: %v", err)
+	}
+
 	oc := consumer.NewOrderConsumer(cr, b)
-	if err := oc.Start(event.ExchangeOrder, "cart_orders_queue", event.RoutingKeyOrderRequested); err != nil {
+	if err := oc.Start(event.ExchangeOrder, orderQueue, event.RoutingKeyOrderRequested); err != nil {
 		log.Fatalf("failed to start order consumer: %v", err)
 	}
 
