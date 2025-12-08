@@ -62,7 +62,7 @@ func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body 
 	}
 
 	// attempt to mark order as Paid
-	ord, err := c.repo.UpdateStatusByUUID(p.OrderUUID, "Paid")
+	ord, err := c.repo.UpdateStatusIfNot(p.OrderUUID, "Paid", "Cancelled")
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Printf("[payment-event-consumer] order not found (uuid=%s)", p.OrderUUID)
@@ -70,6 +70,10 @@ func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body 
 		}
 		log.Printf("[payment-event-consumer] failed to update order status: %v", err)
 		return err
+	}
+	if ord == nil {
+		log.Printf("[payment-event-consumer] skipping Paid update for Cancelled order %s", p.OrderUUID)
+		return nil
 	}
 
 	log.Printf("[payment-event-consumer] order marked Paid uuid=%s id=%d", ord.UUID, ord.ID)

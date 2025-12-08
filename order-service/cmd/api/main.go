@@ -34,7 +34,7 @@ import (
 // @name Authorization
 func main() {
 	// Init Tracer
-	shutdown := telemetry.InitTracer("order-service", "localhost:4317")
+	shutdown := telemetry.InitTracer("order-service")
 	defer func() {
 		if err := shutdown(context.Background()); err != nil {
 			log.Printf("failed to shutdown tracer: %v", err)
@@ -76,7 +76,7 @@ func main() {
 	}
 	log.Println("[order-service] payment consumer started")
 
-	// Saga Compensation (when failing)
+	// when failing
 	stockQueue := "stock_failed_queue"
 	if err := b.DeclareQueue(stockQueue); err != nil {
 		log.Fatalf("failed to declare stock queue: %v", err)
