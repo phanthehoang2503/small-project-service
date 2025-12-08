@@ -16,6 +16,7 @@ sequenceDiagram
     participant Order as Order Service
     participant Product as Product Service
     participant Payment as Payment Service
+    participant Mailer as Mailer Service
     
     User->>Order: 1. Create Order (Pending)
     
@@ -24,12 +25,28 @@ sequenceDiagram
         Order-)Payment: 2b. Event: "order.requested"
     end
     
+    rect rgb(240, 240, 240)
+    Note over Product: Stock Deduction
+    Product->>Product: Deduct Stock
+    alt Stock OK
+        Product->>Product: Invalidate Cache
+    else Stock Failed
+        Product-)Order: Event: "stock.failed"
+        Order->>Order: Cancel Order
+    end
+    end
+
+    rect rgb(240, 255, 240)
+    Note over Payment: Payment Processing
     alt Payment Success
         Payment-)Order: 3. Event: "order.paid"
         Order->>Order: 4. Update Status: Paid
+        Order-)Mailer: 5. Event: "order.paid"
+        Mailer->>Mailer: Send Receipt Email
     else Payment Failed
         Payment-)Order: 3. Event: "payment.failed"
         Order->>Order: 4. Cancel Order
+    end
     end
 ```
 ### Folder structure
