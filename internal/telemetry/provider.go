@@ -13,11 +13,10 @@ import (
 )
 
 // InitTracer initializes the OpenTelemetry tracer provider
-func InitTracer(serviceName, collectorURL string) func(context.Context) error {
+func InitTracer(serviceName string) func(context.Context) error {
 	ctx := context.Background()
 
 	exporter, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(collectorURL),
 		otlptracegrpc.WithInsecure(),
 	)
 	if err != nil {
