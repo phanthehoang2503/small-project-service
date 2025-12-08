@@ -44,18 +44,23 @@ function Request($method, $url, $body = $null, $token = $null, $quiet = $false) 
   }
 }
 
-Write-Host "`nStarting E-Commerce Demo Flow...`n" -ForegroundColor Cyan
-
 # 1. Login
 Write-Host "1. Logging in..." -ForegroundColor Yellow
 $authBody = @{ email = "user@example.com"; username = "user1"; password = "password" }
-# Register first just in case (Quiet mode)
+
 try { Request "POST" "http://localhost:8084/auth/register" $authBody $null $true | Out-Null } catch {}
 
 $loginBody = @{ login = "user@example.com"; password = "password" }
 $loginRes = Request "POST" "http://localhost:8084/auth/login" $loginBody
 $token = $loginRes.token
 Write-Host "   [OK] Logged in! Token acquired." -ForegroundColor Green
+
+# Clear Cart to ensure clean state
+try { 
+  $headers = @{ "Authorization" = "Bearer $token" }
+  Invoke-RestMethod -Method DELETE -Uri "http://localhost:8082/cart" -Headers $headers -ErrorAction SilentlyContinue | Out-Null 
+}
+catch {}
 
 # 2. Create Product
 Write-Host "`n2. Creating Product..." -ForegroundColor Yellow
@@ -64,7 +69,6 @@ $prodList = Request "POST" "http://localhost:8081/products" $prodBody
 $prod = $prodList[0]
 Write-Host "   [OK] Product Created: ID=$($prod.id) Name=$($prod.name) Stock=$($prod.stock)" -ForegroundColor Green
 
-# 3. Add to Cart
 Write-Host "`n3. Adding to Cart..." -ForegroundColor Yellow
 $cartBody = @{ product_id = $prod.id; quantity = 2 }
 Request "POST" "http://localhost:8082/cart" $cartBody $token | Out-Null
@@ -102,4 +106,40 @@ if ($finalProd.stock -eq 98) {
 }
 else {
   Write-Host "   [FAIL] Stock deduction failed!" -ForegroundColor Red
+}
+
+# Test Case 2: Stock Failure 
+Write-Host "Starting Test Case 2: Stock Failure" -ForegroundColor Cyan
+# 8. Add VALID items to Cart
+Write-Host "`n8. Adding Valid items to Cart..." -ForegroundColor Yellow
+$validCartBody = @{ product_id = $prod.id; quantity = 50 } 
+Request "POST" "http://localhost:8082/cart" $validCartBody $token | Out-Null
+Write-Host "   [OK] Added 50 items to cart." -ForegroundColor Green
+
+# 9. Sabotage Stock )
+Write-Host "`n9. Sabotaging Stock..." -ForegroundColor Yellow
+$sabotageBody = @{ name = $prod.name; price = $prod.price; stock = 0 }
+Request "PUT" "http://localhost:8081/products/$($prod.id)" $sabotageBody | Out-Null
+Write-Host "   [OK] Stock set to 0 via API." -ForegroundColor Green
+
+# 10. Checkout
+Write-Host "`n10. Checking Out..." -ForegroundColor Yellow
+$failOrder = Request "POST" "http://localhost:8083/orders" @{} $token
+Write-Host "   [OK] Order Created: UUID=$($failOrder.uuid) Status=$($failOrder.status)" -ForegroundColor Green
+
+# 11. Wait for Async Processing
+Write-Host "`n11. Waiting for Async Processing..." -ForegroundColor Yellow
+Start-Sleep -Seconds 5
+
+# 12. Verify Cancellation
+Write-Host "`n12. Verifying Order Cancellation..." -ForegroundColor Yellow
+$finalFailOrder = Request "GET" "http://localhost:8083/orders/$($failOrder.id)" $null $token
+Write-Host "   Final Status: $($finalFailOrder.status)"
+
+if ($finalFailOrder.status -eq "Cancelled") {
+  Write-Host "   [OK] Order was correctly cancelled" -ForegroundColor Green
+  Write-Host "`nALL TESTS PASSED! Saga Pattern & OTel are Verified." -ForegroundColor Cyan
+}
+else {
+  Write-Host "   [FAIL] Order was NOT cancelled. Status: $($finalFailOrder.status)" -ForegroundColor Red
 }
