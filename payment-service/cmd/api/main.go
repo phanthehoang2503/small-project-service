@@ -22,7 +22,7 @@ import (
 
 func main() {
 	// Init Tracer
-	shutdown := telemetry.InitTracer("payment-service", "localhost:4317")
+	shutdown := telemetry.InitTracer("payment-service")
 	defer func() {
 		if err := shutdown(context.Background()); err != nil {
 			log.Printf("failed to shutdown tracer: %v", err)
