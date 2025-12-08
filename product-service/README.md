@@ -4,9 +4,12 @@ This service manages products (CRUD) for the small-project microservices system.
 
 ### Overview
 
+### Overview
+
 The `product-service` is a Go HTTP API that provides endpoints to create, list,
-retrieve, and delete products. It now includes **Redis Caching** to improve performance
-for read operations.
+retrieve, and delete products. It now includes:
+*   **Redis Caching**: To improve performance for read operations.
+*   **RabbitMQ Consumer**: To handle async stock deduction when orders are placed.
 
 The service follows the repository layout used across the project (entrypoint at
 `cmd/api/main.go`, internal packages for handlers, models, repo, and the router).

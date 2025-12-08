@@ -73,6 +73,7 @@ D:.
 | **Auth Service** | 8084 | Handles user registration, login, and JWT token generation |
 | **Logger Service** | 8085 | Centralized logging service (gRPC/RabbitMQ consumer) |
 | **Payment Service** | 8086 | Simulates payment processing |
+| **Mailer Service** | - | Consumes events to send emails  |
 
 ### Infrastructure
 
@@ -80,7 +81,10 @@ D:.
 |----------|------|-------------|
 | **PostgreSQL** | 5432 | Main database |
 | **RabbitMQ** | 5672 | Message broker for async communication |
+| **Redis** | 6379 | Caching layer |
 | **MailHog** | 1025 | Email testing tool |
+| **Jaeger** | 16686| Distributed Tracing UI |
+| **Grafana** | 3000 | Dashboard |
 
 ---
 
@@ -96,6 +100,7 @@ D:.
 - **Messaging:** RabbitMQ
 - **Caching:** Redis
 - **Observability:** Grafana, Loki, Promtail
+- **Tracing:** OpenTelemetry, Jaeger
 
 ---
 
@@ -108,6 +113,9 @@ docker compose up --build
 # Run individual service, example:
 cd product-service
 air
+
+# Run the demo script to verify the entire flow:
+./demo.ps1
 ```
 
 Then visit Swagger UI for each service:

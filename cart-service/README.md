@@ -23,7 +23,7 @@ go run .
 
 ### Events
 
-- **Consumes**: `product.created`, `product.updated`, `product.deleted`
+- **Consumes**: `product.created`, `product.updated`, `product.deleted`, `order.requested`
 
 ### Swagger / API docs
 
