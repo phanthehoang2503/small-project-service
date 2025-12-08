@@ -30,7 +30,7 @@ import (
 // @BasePath /
 func main() {
 	// Init Tracer
-	shutdown := telemetry.InitTracer("auth-service", "localhost:4317")
+	shutdown := telemetry.InitTracer("auth-service")
 	defer func() {
 		if err := shutdown(context.Background()); err != nil {
 			log.Printf("failed to shutdown tracer: %v", err)
