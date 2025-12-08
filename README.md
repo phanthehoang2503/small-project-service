@@ -25,7 +25,6 @@ sequenceDiagram
         Order-)Payment: 2b. Event: "order.requested"
     end
     
-    rect rgb(240, 240, 240)
     Note over Product: Stock Deduction
     Product->>Product: Deduct Stock
     alt Stock OK
@@ -34,9 +33,7 @@ sequenceDiagram
         Product-)Order: Event: "stock.failed"
         Order->>Order: Cancel Order
     end
-    end
 
-    rect rgb(240, 255, 240)
     Note over Payment: Payment Processing
     alt Payment Success
         Payment-)Order: 3. Event: "order.paid"
@@ -46,7 +43,6 @@ sequenceDiagram
     else Payment Failed
         Payment-)Order: 3. Event: "payment.failed"
         Order->>Order: 4. Cancel Order
-    end
     end
 ```
 ### Folder structure
