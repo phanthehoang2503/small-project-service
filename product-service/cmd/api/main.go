@@ -17,6 +17,7 @@ import (
 	"github.com/phanthehoang2503/small-project/product-service/internal/router"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 // @title Product Service API
@@ -70,6 +71,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(otelgin.Middleware("product-service"))
 	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, productRepo, cacheRepo)
 

@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"fmt"
+
 	"github.com/phanthehoang2503/small-project/product-service/internal/model"
 	"gorm.io/gorm"
 )
@@ -63,16 +65,25 @@ func (d *Database) Delete(id int64) error {
 	return nil
 }
 
-func (d *Database) DeductStock(productID uint, quantity int) error {
-	res := d.DB.Model(&model.Product{}).
-		Where("id = ? AND stock >= ?", productID, quantity).
-		Update("stock", gorm.Expr("stock - ?", quantity))
+type StockItem struct {
+	ProductID uint
+	Quantity  int
+}
 
-	if res.Error != nil {
-		return res.Error
-	}
-	if res.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+func (d *Database) BatchDeductStock(items []StockItem) error {
+	return d.DB.Transaction(func(tx *gorm.DB) error {
+		for _, item := range items {
+			res := tx.Model(&model.Product{}).
+				Where("id = ? AND stock >= ?", item.ProductID, item.Quantity).
+				Update("stock", gorm.Expr("stock - ?", item.Quantity))
+
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected == 0 {
+				return fmt.Errorf("insufficient stock for product %d", item.ProductID)
+			}
+		}
+		return nil
+	})
 }

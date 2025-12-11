@@ -43,25 +43,34 @@ func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []by
 	log.Printf("[product-consumer] received order.requested order=%s items=%d", payload.OrderUUID, len(payload.Items))
 
 	// Deduct stock for each item
+	// Deduct stock atomically
+	var stockItems []repo.StockItem
 	for _, item := range payload.Items {
-		if err := c.repo.DeductStock(item.ProductID, item.Quantity); err != nil {
-			log.Printf("[product-consumer] failed to deduct stock for product %d: %v", item.ProductID, err)
+		stockItems = append(stockItems, repo.StockItem{
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+		})
+	}
 
-			// Publish stock.failed event to cancel order
-			failEvent := message.StockFailed{
-				OrderUUID: payload.OrderUUID,
-				Reason:    err.Error(),
-			}
-			if pubErr := c.b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyStockFailed, failEvent); pubErr != nil {
-				log.Printf("[product-consumer] failed to publish stock.failed event: %v", pubErr)
-			} else {
-				log.Printf("[product-consumer] published stock.failed for order %s", payload.OrderUUID)
-			}
+	if err := c.repo.BatchDeductStock(stockItems); err != nil {
+		log.Printf("[product-consumer] failed to deduct stock (batch): %v", err)
 
-			return nil // Return nil to ack the message
+		// Publish stock.failed event to cancel order
+		failEvent := message.StockFailed{
+			OrderUUID: payload.OrderUUID,
+			Reason:    err.Error(),
+		}
+		if pubErr := c.b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyStockFailed, failEvent); pubErr != nil {
+			log.Printf("[product-consumer] failed to publish stock.failed event: %v", pubErr)
+		} else {
+			log.Printf("[product-consumer] published stock.failed for order %s", payload.OrderUUID)
 		}
 
-		// Invalidate Cache
+		return nil // Return nil to ack the message
+	}
+
+	// Invalidate Cache for all items after successful deduction
+	for _, item := range payload.Items {
 		if c.cache != nil {
 			if err := c.cache.InvalidateProduct(ctx, item.ProductID); err != nil {
 				log.Printf("[product-consumer] failed to invalidate cache for product %d: %v", item.ProductID, err)
