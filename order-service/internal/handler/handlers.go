@@ -18,6 +18,8 @@ import (
 	"github.com/phanthehoang2503/small-project/order-service/internal/model"
 	"github.com/phanthehoang2503/small-project/order-service/internal/publisher"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"gorm.io/gorm"
 )
 
@@ -39,6 +41,10 @@ type UpdateStatusReq struct {
 // @Router /orders [post]
 func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		tr := otel.Tracer("order-service")
+		ctx, span := tr.Start(c.Request.Context(), "create_order_handler")
+		defer span.End()
+
 		// get user from JWT in context
 		userID, err := util.GetUserID(c)
 		if err != nil {
@@ -58,21 +64,31 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 			return
 		}
 
+		// 1. Check Cart Span
+		ctxCart, spanCart := tr.Start(ctx, "check_cart")
 		cartURL := base
-		req, err := http.NewRequest("GET", cartURL, nil)
+		req, err := http.NewRequestWithContext(ctxCart, "GET", cartURL, nil)
 		if err != nil {
+			spanCart.RecordError(err)
+			spanCart.End()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
 			return
 		}
+		otel.GetTextMapPropagator().Inject(ctxCart, propagation.HeaderCarrier(req.Header))
 		req.Header.Set("Authorization", c.GetHeader("Authorization"))
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil || resp.StatusCode != 200 {
+			if err != nil {
+				spanCart.RecordError(err)
+			} else {
+				spanCart.RecordError(fmt.Errorf("cart status %d", resp.StatusCode))
+			}
+			spanCart.End()
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch cart"})
 			return
 		}
-		defer resp.Body.Close()
 
 		var cartItems []struct {
 			ProductID uint  `json:"product_id"`
@@ -82,10 +98,15 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&cartItems); err != nil {
+			spanCart.RecordError(err)
+			spanCart.End()
+			resp.Body.Close()
 			log.Printf("Failed to decode cart response: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid response from cart service"})
 			return
 		}
+		resp.Body.Close()
+		spanCart.End()
 
 		if len(cartItems) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "cart empty"})
@@ -115,10 +136,15 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 		}
 		order.Total = total
 
+		// 2. DB Create Span
+		_, spanDB := tr.Start(ctx, "db_create")
 		if err := r.CreateOrder(userID, order); err != nil {
+			spanDB.RecordError(err)
+			spanDB.End()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		spanDB.End()
 
 		created, err := r.GetByID(userID, order.ID)
 		if err != nil {
@@ -126,7 +152,9 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 			return
 		}
 
+		// 3. Publish Event Span
 		if b != nil {
+			ctxPub, spanPub := tr.Start(ctx, "publish_event")
 			var msgItems []message.OrderItem
 			for _, i := range created.Items {
 				msgItems = append(msgItems, message.OrderItem{
@@ -134,14 +162,16 @@ func CreateOrder(r *repo.OrderRepo, b *broker.Broker) gin.HandlerFunc {
 					Quantity:  i.Quantity,
 				})
 			}
-			if err := publisher.PublishOrderRequested(c.Request.Context(), b, created.UUID, created.UUID, created.UserID, created.Total, "VND", msgItems); err != nil {
+			if err := publisher.PublishOrderRequested(ctxPub, b, created.UUID, created.UUID, created.UserID, created.Total, "VND", msgItems); err != nil {
+				spanPub.RecordError(err)
 				log.Printf("failed to publish order requested event: %v", err)
 			}
+			spanPub.End()
 		}
 
 		c.JSON(http.StatusCreated, created)
 
-		logger.Info(c.Request.Context(), fmt.Sprintf("Order created: id=%d uuid=%s user_id=%d total=%d", created.ID, created.UUID, created.UserID, created.Total))
+		logger.Info(ctx, fmt.Sprintf("Order created: id=%d uuid=%s user_id=%d total=%d", created.ID, created.UUID, created.UserID, created.Total))
 	}
 }
 

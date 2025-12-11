@@ -115,14 +115,26 @@ func (r *OrderRepo) UpdateStatusByUUID(orderUUID, status string) (*model.Order, 
 
 // UpdateStatusIfNot updates status only if current status is NOT in forbiddenStates
 func (r *OrderRepo) UpdateStatusIfNot(orderUUID, status string, forbiddenStates ...string) (*model.Order, error) {
+	query := r.db.Model(&model.Order{}).Where("uuid = ?", orderUUID)
+
 	if len(forbiddenStates) > 0 {
-		var count int64
-		// Check if current status is forbidden
-		r.db.Model(&model.Order{}).Where("uuid = ? AND status IN ?", orderUUID, forbiddenStates).Count(&count)
-		if count > 0 {
-			// It is forbidden, return skipping
-			return nil, nil // or specific error
-		}
+		query = query.Where("status NOT IN ?", forbiddenStates)
 	}
-	return r.UpdateStatusByUUID(orderUUID, status)
+
+	res := query.Update("status", status)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if res.RowsAffected == 0 {
+		// Either record not found OR status was forbidden.
+		// Returns nil order to indicate no update occurred (idempotent).
+		return nil, nil
+	}
+
+	// Load and return the full order with items
+	var ord model.Order
+	if err := r.db.Preload("Items").Where("uuid = ?", orderUUID).First(&ord).Error; err != nil {
+		return nil, err
+	}
+	return &ord, nil
 }
