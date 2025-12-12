@@ -137,12 +137,45 @@ Then visit Swagger UI for each service:
 ***Cart***: http://localhost:8082/swagger/index.html  
 ***Order***: http://localhost:8083/swagger/index.html  
 ***Auth***: http://localhost:8084/swagger/index.html  
-***Payment***: http://localhost:8086/swagger/index.html
+***Payment***: http://localhost:8086/swagger/index.html  
+
+
+### Tools
+*   **MailHog (Email Testing)**: http://localhost:8025
+*   **Jaeger (Tracing UI)**: http://localhost:16686
+*   **Grafana (Logs & Metrics)**: http://localhost:3000
 
 ### How to use
 1. Open the Auth page then register and login to get the token.
 2. On cart or order page click on the lock icon and type: **Bearer <"token">** remove the (", <>) symbol.
 
+### Testing 
+The `demo.ps1` script runs a full end-to-end verification of the Saga pattern. It executes 3 key scenarios:
+1.  **Happy Path**: A standard successful order. Verifies stock deduction and "Paid" status.
+2.  **Stock Failure**: Simulates an out-of-stock scenario. Verifies the order is "Cancelled" by the Saga flow.
+3.  **Rollback**: Simulates a mixed order (1 valid item, 1 invalid). Verifies the order is cancelled and the valid item's stock is rolled back.
+
+**How to run:**
+```powershell
+./demo.ps1
+```
+
+### Load Testing
+The project includes a custom load testing tool in `load-test/main.go`. It simulates concurrent users performing full purchase flows (Register -> Login -> Browse -> Add to Cart -> Checkout).
+
+**Run the load test:**
+```bash
+
+# Reset stock for all products to 10,000 (always run this first when try this)
+go run load-test/main.go -replenish
+
+# Run with default settings (10 users, 30 seconds)
+go run load-test/main.go
+
+# Customize users and duration
+go run load-test/main.go -users 50 -duration 1m
+
+```
 
 ## Author
 
@@ -202,6 +235,7 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 - **Messaging:** RabbitMQ
 - **Cache:** Redis
 - **Giám sát:** Grafana, Loki, Promtail
+- **Tracing:** OpenTelemetry, Jaeger
 
 ---
 
