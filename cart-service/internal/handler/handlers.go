@@ -13,6 +13,8 @@ import (
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/repo"
 	"github.com/phanthehoang2503/small-project/internal/util"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"gorm.io/gorm"
 )
 
@@ -79,7 +81,10 @@ func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 				return
 			}
 			url := fmt.Sprintf("%s/%d", base, in.ProductID)
-			resp, err := http.Get(url)
+			req, _ := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
+			otel.GetTextMapPropagator().Inject(c.Request.Context(), propagation.HeaderCarrier(req.Header))
+			client := &http.Client{}
+			resp, err := client.Do(req)
 			if err != nil {
 				log.Printf("Failed to fetch product: %v", err)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})

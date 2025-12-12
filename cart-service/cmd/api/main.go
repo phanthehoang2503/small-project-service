@@ -16,6 +16,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
 	"github.com/phanthehoang2503/small-project/internal/telemetry"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	_ "github.com/phanthehoang2503/small-project/cart-service/docs"
 	swaggerFiles "github.com/swaggo/files"
@@ -92,6 +93,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(otelgin.Middleware("cart-service"))
 	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, cr, pr, jwtSecret)
 
