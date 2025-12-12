@@ -42,7 +42,7 @@ function Request($method, $url, $body = $null, $token = $null) {
   }
 }
 
-function Setup-Environment {
+function Initialize-Environment {
   Write-Log "HEADER" "Environment Setup"
     
   Write-Log "INFO" "Authenticating..."
@@ -98,7 +98,7 @@ function Test-StockFailure($token) {
   Assert-Equal $finalOrder.status "Cancelled" "Order status should be Cancelled"
 }
 
-function Test-AtomicRollback($token) {
+function Test-Rollback($token) {
   Write-Log "HEADER" "Test 3: Atomic Rollback (Partial Failure)"
 
   Write-Log "STEP" "Creating Mixed Cart (1 Valid, 1 Sabotaged)"
@@ -130,7 +130,7 @@ function Test-AtomicRollback($token) {
 }
 
 try {
-  $token = Setup-Environment
+  $token = Initialize-Environment
     
   Test-HappyPath $token
   Test-StockFailure $token
