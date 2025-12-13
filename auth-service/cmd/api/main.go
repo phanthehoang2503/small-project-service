@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -16,6 +17,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
 	"github.com/phanthehoang2503/small-project/internal/telemetry"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	_ "github.com/phanthehoang2503/small-project/auth-service/docs"
@@ -56,10 +58,20 @@ func main() {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	authHandler := handler.NewAuthHandler(userRepo, jwtSecret, 72)
 
+	// Connect Redis for Rate Limiting
+	redisAddr := os.Getenv("REDIS_URL")
+	rdb := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+
 	r := gin.Default()
 	r.Use(otelgin.Middleware("auth-service"))
 	r.Use(middleware.CORSMiddleware())
-	router.RegisterRoutes(r, authHandler, jwtSecret)
+
+	// Apply rate limit specifically to login: 5 requests per minute
+	loginLimiter := middleware.RateLimitMiddleware(rdb, 5, time.Minute)
+
+	router.RegisterRoutes(r, authHandler, jwtSecret, loginLimiter)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8084")
