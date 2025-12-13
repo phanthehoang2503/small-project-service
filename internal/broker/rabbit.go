@@ -36,6 +36,10 @@ func Init(url string) (*Broker, error) {
 		return nil, err
 	}
 
+	if err := b.SetupDLX(); err != nil {
+		return nil, err
+	}
+
 	// Start background reconnection handler
 	go b.watchConnection()
 
@@ -140,7 +144,12 @@ func (b *Broker) DeclareQueue(name string) error {
 	}
 	b.pubChanMutex.Lock()
 	defer b.pubChanMutex.Unlock()
-	_, err = ch.QueueDeclare(name, true, false, false, false, nil)
+	// Arguments for DLQ
+	args := amqp.Table{
+		"x-dead-letter-exchange":    "dlx",
+		"x-dead-letter-routing-key": "dlq",
+	}
+	_, err = ch.QueueDeclare(name, true, false, false, false, args)
 	return err
 }
 
@@ -238,13 +247,40 @@ func (b *Broker) Consume(queue string, handler func(ctx context.Context, routing
 			ctx := otel.GetTextMapPropagator().Extract(context.Background(), AMQPCarrier(msg.Headers))
 
 			if err := handler(ctx, msg.RoutingKey, msg.Body); err != nil {
-				_ = msg.Nack(false, true)
+				// FAILURE STRATEGY: Do NOT requeue. Send to DLX (if configured).
+				// If no DLX, message is dropped.
+				_ = msg.Nack(false, false)
 				continue
 			}
 			_ = msg.Ack(false)
 		}
 		log.Printf("RabbitMQ: consumer for queue %q stopped", queue)
 	}()
+
+	return nil
+}
+
+// SetupDLX configures the Dead Letter Exchange and Queue.
+func (b *Broker) SetupDLX() error {
+	ch, err := b.getPubChannel()
+	if err != nil {
+		return err
+	}
+
+	// 1. Declare DLX
+	if err := ch.ExchangeDeclare("dlx", "direct", true, false, false, false, nil); err != nil {
+		return err
+	}
+
+	// 2. Declare DLQ
+	if _, err := ch.QueueDeclare("dlq", true, false, false, false, nil); err != nil {
+		return err
+	}
+
+	// 3. Bind DLQ to DLX
+	if err := ch.QueueBind("dlq", "dlq", "dlx", false, nil); err != nil {
+		return err
+	}
 
 	return nil
 }
