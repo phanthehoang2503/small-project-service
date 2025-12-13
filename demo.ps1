@@ -134,7 +134,7 @@ try {
     
   Test-HappyPath $token
   Test-StockFailure $token
-  Test-AtomicRollback $token
+  Test-Rollback $token
 
   Write-Log "HEADER" "Test Summary"
   Write-Host " Total Tests : $Global:TotalTests"
