@@ -20,7 +20,7 @@ func (r *ProductRepo) Upsert(s model.ProductSnapshot) error {
 	s.UpdatedAt = time.Now().UTC()
 	return r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "product_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"name", "price", "stock", "version", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"name", "price", "stock", "updated_at"}),
 	}).Create(&s).Error
 }
 
