@@ -61,7 +61,13 @@ func main() {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
 	//repos
-	cr := repo.NewCartRepo(db)
+	// cr := repo.NewCartRepo(db) // Postgres
+	redisAddr := os.Getenv("REDIS_URL")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	cr := repo.NewRedisCartRepo(redisAddr)
+
 	pr := repo.NewProductRepo(db)
 
 	// Setup Product Queue

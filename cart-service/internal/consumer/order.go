@@ -11,11 +11,11 @@ import (
 )
 
 type OrderConsumer struct {
-	cartRepo *repo.CartRepo
+	cartRepo repo.CartRepository
 	broker   *broker.Broker
 }
 
-func NewOrderConsumer(cr *repo.CartRepo, b *broker.Broker) *OrderConsumer {
+func NewOrderConsumer(cr repo.CartRepository, b *broker.Broker) *OrderConsumer {
 	return &OrderConsumer{
 		cartRepo: cr,
 		broker:   b,

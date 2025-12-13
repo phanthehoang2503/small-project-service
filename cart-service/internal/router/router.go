@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
-func RegisterRoutes(r *gin.Engine, cartRepo *repo.CartRepo, productRepo *repo.ProductRepo, jwtSecret []byte) {
+func RegisterRoutes(r *gin.Engine, cartRepo repo.CartRepository, productRepo *repo.ProductRepo, jwtSecret []byte) {
 	r.Use(otelgin.Middleware("cart-service"))
 	api := r.Group("/cart")
 	api.Use(middleware.JWTMiddleware(jwtSecret))

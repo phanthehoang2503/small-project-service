@@ -59,7 +59,7 @@ type CartResponse struct {
 // @Failure 500 {object} map[string]string
 // @Router /cart [post]
 // @Security BearerAuth
-func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
+func AddToCart(r repo.CartRepository, pr *repo.ProductRepo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var in AddToCartReq
 		if err := c.ShouldBindJSON(&in); err != nil {
@@ -159,7 +159,7 @@ func AddToCart(r *repo.CartRepo, pr *repo.ProductRepo) gin.HandlerFunc {
 // @Failure 500 {object} map[string]string
 // @Router /cart/{id} [put]
 // @Security BearerAuth
-func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
+func UpdateQuantity(r repo.CartRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
@@ -209,7 +209,7 @@ func UpdateQuantity(r *repo.CartRepo) gin.HandlerFunc {
 // @Failure 500 {object} map[string]string
 // @Router /cart [get]
 // @Security BearerAuth
-func GetCart(r *repo.CartRepo) gin.HandlerFunc {
+func GetCart(r repo.CartRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := util.GetUserID(c)
 		if err != nil {
@@ -248,7 +248,7 @@ func GetCart(r *repo.CartRepo) gin.HandlerFunc {
 // @Failure 404 {object} map[string]string
 // @Router /cart/{id} [delete]
 // @Security BearerAuth
-func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
+func RemoveItem(r repo.CartRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
@@ -284,7 +284,7 @@ func RemoveItem(r *repo.CartRepo) gin.HandlerFunc {
 // @Failure 500 {object} map[string]string
 // @Router /cart [delete]
 // @Security BearerAuth
-func ClearCart(r *repo.CartRepo) gin.HandlerFunc {
+func ClearCart(r repo.CartRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := util.GetUserID(c)
 		if err != nil {
