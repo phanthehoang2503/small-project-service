@@ -151,9 +151,9 @@ Then visit Swagger UI for each service:
 
 ### Testing 
 The `demo.ps1` script runs a full end-to-end verification of the Saga pattern. It executes 3 key scenarios:
-1.  **Happy Path**: A standard successful order. Verifies stock deduction and "Paid" status.
-2.  **Stock Failure**: Simulates an out-of-stock scenario. Verifies the order is "Cancelled" by the Saga flow.
-3.  **Rollback**: Simulates a mixed order (1 valid item, 1 invalid). Verifies the order is cancelled and the valid item's stock is rolled back.
+1.  **Normal path**: A standard successful order. Verifies stock deduction and "Paid" status.
+2.  **Out of stock**: Simulates an out-of-stock scenario. Verifies the order is "Cancelled" by the Saga flow.
+3.  **Revert stock**: Simulates a mixed order (1 valid item, 1 invalid). Verifies the order is cancelled and the valid item's stock is rolled back.
 
 **How to run:**
 ```powershell
@@ -200,6 +200,7 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 *   **Giám sát (Observability)**: Ghi log tập trung với Grafana Loki.
 *   **CI/CD**: Tự động build và test với GitHub Actions.
 
+
 ---
 
 ### Các service hiện có
@@ -212,14 +213,18 @@ Tất cả giao tiếp với nhau qua REST và RabbitMQ.
 | **Auth Service** | 8084 | Xử lý đăng ký, đăng nhập |
 | **Logger Service** | 8085 | Ghi log |
 | **Payment Service** | 8086 | Mô phỏng thanh toán |
+| **Mailer Service** | - | Gửi email (Consumer) |
 
 ### Infrastructure
 
 | Service | Port | Mô tả |
 |----------|------|-------|
 | **PostgreSQL** | 5432 | CSDL |
-| **RabbitMQ** | 5672 | Message |
+| **RabbitMQ** | 5672 | Message Broker |
+| **Redis** | 6379 | Cache |
 | **MailHog** | 1025 | Dùng để test email |
+| **Jaeger** | 16686| Tracing UI |
+| **Grafana** | 3000 | Dashboard Log/Metrics |
 
 ---
 
@@ -250,6 +255,33 @@ cd auth-service
 air
 ```
 
+
+### Kiểm thử 
+Script `demo.ps1` chạy kiểm thử E2E cho Saga với 3 kịch bản:
+1.  **Đặt hàng thành công**: Đặt hàng thành công.
+2.  **Hết hàng**: Hết hàng -> Hủy đơn.
+3.  **Hoàn trả hàng**: Đơn hỗn hợp (1 hết hàng, 1 còn hàng) -> hoàn trả lại toàn bộ.
+
+**Cách chạy:**
+```powershell
+./demo.ps1
+```
+
+### Mô phỏng chịu tải lớn
+Công cụ load test nằm trong `load-test/main.go`.
+
+**Cách chạy:**
+```bash
+# Reset kho hàng về 10,000
+go run load-test/main.go -replenish
+
+# Chạy mặc định (10 người dùng, 30 giây)
+go run load-test/main.go
+
+# Tùy chỉnh
+go run load-test/main.go -users 50 -duration 1m
+```
+
 Truy cập Swagger UI của từng service:
 ***Product***: http://localhost:8081/swagger/index.html  
 ***Cart***: http://localhost:8082/swagger/index.html  
@@ -257,3 +289,8 @@ Truy cập Swagger UI của từng service:
 ***Auth***: http://localhost:8084/swagger/index.html  
 ***Payment***: http://localhost:8086/swagger/index.html  
 [Cách sử dụng](#how-to-use)
+
+### Công cụ
+*   **MailHog**: http://localhost:8025
+*   **Jaeger**: http://localhost:16686
+*   **Grafana**: http://localhost:3000
