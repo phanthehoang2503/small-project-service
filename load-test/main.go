@@ -37,7 +37,7 @@ type Stats struct {
 var stats Stats
 
 func main() {
-	users := flag.Int("users", 10, "Number of concurrent users")
+	users := flag.Int("users", 5, "Number of concurrent users")
 	duration := flag.Duration("duration", 30*time.Second, "Test duration")
 	replenish := flag.Bool("replenish", false, "Replenish stock for all products to 10000")
 	flag.Parse()
