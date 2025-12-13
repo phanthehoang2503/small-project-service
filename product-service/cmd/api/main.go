@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/phanthehoang2503/small-project/internal/database"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
@@ -26,6 +27,7 @@ import (
 // @host localhost:8081
 // @BasePath /
 func main() {
+	godotenv.Load()
 	// Init Tracer
 	shutdown := telemetry.InitTracer("product-service")
 	defer func() {

@@ -22,6 +22,7 @@ import (
 	_ "github.com/phanthehoang2503/small-project/order-service/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 // @title Order Service API
@@ -33,6 +34,7 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	godotenv.Load()
 	// Init Tracer
 	shutdown := telemetry.InitTracer("order-service")
 	defer func() {
@@ -41,7 +43,6 @@ func main() {
 		}
 	}()
 
-	godotenv.Load()
 	db, err := database.ConnectDB() //connect to db
 	if err != nil {
 		log.Fatal("failed to connect to database...")
@@ -94,6 +95,7 @@ func main() {
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	r := gin.Default()
+	r.Use(otelgin.Middleware("order-service"))
 	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, s, b, jwtSecret)
 

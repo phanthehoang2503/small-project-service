@@ -21,6 +21,7 @@ import (
 	_ "github.com/phanthehoang2503/small-project/auth-service/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 // @title Auth Service API
@@ -29,6 +30,7 @@ import (
 // @host localhost:8084
 // @BasePath /
 func main() {
+	godotenv.Load()
 	// Init Tracer
 	shutdown := telemetry.InitTracer("auth-service")
 	defer func() {
@@ -36,8 +38,6 @@ func main() {
 			log.Printf("failed to shutdown tracer: %v", err)
 		}
 	}()
-
-	_ = godotenv.Load()
 
 	db := DbConnect()
 
@@ -57,6 +57,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(userRepo, jwtSecret, 72)
 
 	r := gin.Default()
+	r.Use(otelgin.Middleware("auth-service"))
 	r.Use(middleware.CORSMiddleware())
 	router.RegisterRoutes(r, authHandler, jwtSecret)
 

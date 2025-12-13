@@ -32,6 +32,8 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	godotenv.Load()
+
 	// Init Tracer
 	shutdown := telemetry.InitTracer("cart-service")
 	defer func() {
@@ -39,8 +41,6 @@ func main() {
 			log.Printf("failed to shutdown tracer: %v", err)
 		}
 	}()
-
-	godotenv.Load()
 
 	db, err := database.ConnectDB()
 	if err != nil {
