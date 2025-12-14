@@ -88,9 +88,11 @@ services:
     env_file: .env
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - REDIS_URL=redis:6379
     depends_on:
       - db
       - rabbitmq
+      - redis
     ports:
       - "8082:8082"
     networks: [ backend ]
@@ -102,10 +104,12 @@ services:
     env_file: .env
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - REDIS_URL=redis:6379
     depends_on:
       - db
       - rabbitmq
       - logger-service
+      - redis
     ports:
       - "8084:8084"
     networks: [ backend ]

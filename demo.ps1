@@ -57,7 +57,7 @@ function Initialize-Environment {
 }
 
 function Test-HappyPath($token) {
-  Write-Log "HEADER" "Test 1: Happy Path (Successful Order)"
+  Write-Log "HEADER" "Test 1: Successful Order"
 
   Write-Log "STEP" "Creating Product & Adding to Cart"
   $prod = (Request "POST" "http://localhost:8081/products" @( @{ name = "Valid Product"; price = 1000; stock = 100 } ))[0]
@@ -78,7 +78,7 @@ function Test-HappyPath($token) {
 }
 
 function Test-StockFailure($token) {
-  Write-Log "HEADER" "Test 2: Stock Failure (Order Cancellation)"
+  Write-Log "HEADER" "Test 2: Stock Failure"
 
   Write-Log "STEP" "Setting up Stock Failure Scenario"
   $prod = (Request "POST" "http://localhost:8081/products" @( @{ name = "Fail Product"; price = 1000; stock = 100 } ))[0]
@@ -99,7 +99,7 @@ function Test-StockFailure($token) {
 }
 
 function Test-Rollback($token) {
-  Write-Log "HEADER" "Test 3: Atomic Rollback (Partial Failure)"
+  Write-Log "HEADER" "Test 3: Rollback"
 
   Write-Log "STEP" "Creating Mixed Cart (1 Valid, 1 Sabotaged)"
   $prodA = (Request "POST" "http://localhost:8081/products" @( @{ name = "Safe Product"; price = 100; stock = 50 } ))[0]

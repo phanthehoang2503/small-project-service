@@ -173,7 +173,7 @@ go run load-test/main.go -replenish
 go run load-test/main.go
 
 # Customize users and duration
-go run load-test/main.go -users 50 -duration 1m
+go run load-test/main.go -users 5 -duration 1m
 
 ```
 
