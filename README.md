@@ -169,12 +169,8 @@ The project includes a custom load testing tool in `load-test/main.go`. It simul
 # Reset stock for all products to 10,000 (always run this first when try this)
 go run load-test/main.go -replenish
 
-# Run with default settings (10 users, 30 seconds)
+# Run with default settings
 go run load-test/main.go
-
-# Customize users and duration
-go run load-test/main.go -users 5 -duration 1m
-
 ```
 
 ## Author
@@ -275,11 +271,8 @@ Công cụ load test nằm trong `load-test/main.go`.
 # Reset kho hàng về 10,000
 go run load-test/main.go -replenish
 
-# Chạy mặc định (10 người dùng, 30 giây)
+# Chạy mặc định (5 người dùng trong 30 giây)
 go run load-test/main.go
-
-# Tùy chỉnh
-go run load-test/main.go -users 50 -duration 1m
 ```
 
 Truy cập Swagger UI của từng service:
