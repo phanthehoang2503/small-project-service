@@ -54,8 +54,8 @@ func main() {
 		log.Fatalf("failed to declare queue: %v", err)
 	}
 
-	// bind the queue to order_exchange with routing key order.requested
-	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyOrderRequested}); err != nil {
+	// bind the queue to order_exchange with routing key inventory.reserved (Sequential Flow Step 2)
+	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyInventoryReserved}); err != nil {
 		log.Fatalf("failed to bind queue: %v", err)
 	}
 

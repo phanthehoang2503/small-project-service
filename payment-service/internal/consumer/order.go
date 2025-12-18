@@ -31,19 +31,19 @@ func (pc *PaymentConsumer) Start(queueName string) error {
 
 // handle implements the signature expected by broker.Consume: func(ctx context.Context, routingKey string, body []byte) error
 func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
-	// expect order.requested
-	if routingKey != event.RoutingKeyOrderRequested {
+	// expect inventory.reserved
+	if routingKey != event.RoutingKeyInventoryReserved {
 		log.Printf("[payment-consumer] unexpected routing key: %s", routingKey)
 		return nil
 	}
 
-	var payload message.OrderRequested
+	var payload message.InventoryReserved
 	if err := json.Unmarshal(body, &payload); err != nil {
 		log.Printf("[payment-consumer] invalid payload: %v", err)
 		return nil
 	}
 
-	log.Printf("[payment-consumer] processing order.requested order=%s amount=%d", payload.OrderUUID, payload.Total)
+	log.Printf("[payment-consumer] processing inventory.reserved order=%s amount=%d", payload.OrderUUID, payload.Total)
 
 	if _, err := pc.repo.CreatePending(payload.OrderUUID, payload.Total, payload.Currency); err != nil {
 		log.Printf("[payment-consumer] db create failed: %v", err)
@@ -69,11 +69,11 @@ func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body [
 		"timestamp":      time.Now().UTC().Format(time.RFC3339),
 	}
 
-	if err := pc.b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyOrderPaid, out); err != nil {
-		log.Printf("[payment-consumer] publish order.paid failed: %v", err)
+	if err := pc.b.PublishJSON(ctx, event.ExchangeOrder, event.RoutingKeyPaymentSucceeded, out); err != nil {
+		log.Printf("[payment-consumer] publish payment.succeeded failed: %v", err)
 		return err
 	}
-	log.Printf("[payment-consumer] successfully published order.paid event for order=%s", payload.OrderUUID)
+	log.Printf("[payment-consumer] successfully published payment.succeeded event for order=%s", payload.OrderUUID)
 
 	log.Printf("[payment-consumer] payment succeeded order=%s", payload.OrderUUID)
 	logger.Info(ctx, fmt.Sprintf("Payment succeeded: order=%s amount=%d", payload.OrderUUID, payload.Total))
