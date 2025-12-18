@@ -42,7 +42,7 @@ func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body 
 		return c.handlePaymentFailed(body)
 	}
 
-	if routingKey != event.RoutingKeyOrderPaid {
+	if routingKey != event.RoutingKeyPaymentSucceeded {
 		// ignore unrelated keys but ack
 		return nil
 	}
@@ -53,7 +53,7 @@ func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body 
 		return nil // ack malformed message
 	}
 
-	log.Printf("[payment-event-consumer] received order.paid order=%s amount=%d", p.OrderUUID, p.Amount)
+	log.Printf("[payment-event-consumer] received payment.succeeded order=%s amount=%d", p.OrderUUID, p.Amount)
 
 	// skip if payment status is not succeeded
 	if p.Status != "" && p.Status != "succeeded" && p.Status != "success" {

@@ -28,17 +28,17 @@ func (c *StockConsumer) Start(queueName string) error {
 }
 
 func (c *StockConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
-	if routingKey != event.RoutingKeyStockFailed {
+	if routingKey != event.RoutingKeyInventoryReservationFailed {
 		return nil
 	}
 
-	var payload message.StockFailed
+	var payload message.InventoryReservationFailed
 	if err := json.Unmarshal(body, &payload); err != nil {
-		log.Printf("[order-stock-consumer] failed to unmarshal stock.failed: %v", err)
+		log.Printf("[order-stock-consumer] failed to unmarshal inventory.reservation.failed: %v", err)
 		return nil // ack
 	}
 
-	log.Printf("[order-stock-consumer] received stock.failed for order %s. Reason: %s", payload.OrderUUID, payload.Reason)
+	log.Printf("[order-stock-consumer] received inventory.reservation.failed for order %s. Reason: %s", payload.OrderUUID, payload.Reason)
 
 	// Cancel the order
 	if _, err := c.repo.UpdateStatusByUUID(payload.OrderUUID, "Cancelled"); err != nil {

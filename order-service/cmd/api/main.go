@@ -65,8 +65,8 @@ func main() {
 		log.Fatalf("failed to declare queue: %v", err)
 	}
 
-	// Bind queue to order exchange with order.paid routing key
-	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyOrderPaid, event.RoutingKeyPaymentFailed}); err != nil {
+	// Bind queue to order exchange
+	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyPaymentSucceeded, event.RoutingKeyPaymentFailed}); err != nil {
 		log.Fatalf("failed to bind queue: %v", err)
 	}
 
@@ -82,7 +82,7 @@ func main() {
 	if err := b.DeclareQueue(stockQueue); err != nil {
 		log.Fatalf("failed to declare stock queue: %v", err)
 	}
-	if err := b.BindQueue(stockQueue, event.ExchangeOrder, []string{event.RoutingKeyStockFailed}); err != nil {
+	if err := b.BindQueue(stockQueue, event.ExchangeOrder, []string{event.RoutingKeyInventoryReservationFailed}); err != nil {
 		log.Fatalf("failed to bind stock queue: %v", err)
 	}
 
