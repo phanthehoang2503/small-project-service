@@ -24,7 +24,7 @@ func (c *MailerConsumer) Start(queueName string) error {
 }
 
 func (c *MailerConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
-	if routingKey == event.RoutingKeyOrderPaid {
+	if routingKey == event.RoutingKeyPaymentSucceeded {
 		return c.handleOrderPaid(body)
 	}
 	return nil

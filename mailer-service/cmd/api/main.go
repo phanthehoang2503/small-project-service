@@ -23,9 +23,9 @@ func main() {
 		log.Fatalf("failed to declare queue: %v", err)
 	}
 
-	// Bind to order.paid
-	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyOrderPaid}); err != nil {
-		log.Fatalf("failed to bind queue order.paid: %v", err)
+	// Bind to payment.succeeded
+	if err := b.BindQueue(queueName, event.ExchangeOrder, []string{event.RoutingKeyPaymentSucceeded}); err != nil {
+		log.Fatalf("failed to bind queue payment.succeeded: %v", err)
 	}
 
 	// Start consumer
