@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/phanthehoang2503/small-project/internal/database"
+	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/helper"
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/middleware"
@@ -61,8 +62,12 @@ func main() {
 	if err := b.DeclareQueue(queueName); err != nil {
 		log.Fatalf("Failed to declare queue: %v", err)
 	}
-	// Bind to Order Exchange to listen for order.requested
-	if err := b.BindQueue(queueName, "order_exchange", []string{"order.requested"}); err != nil {
+	// Bind to Order Exchange
+	bindingKeys := []string{
+		event.RoutingKeyOrderCreated,
+		event.RoutingKeyPaymentFailed,
+	}
+	if err := b.BindQueue(queueName, event.ExchangeOrder, bindingKeys); err != nil {
 		log.Fatalf("Failed to bind queue: %v", err)
 	}
 
