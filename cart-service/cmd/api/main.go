@@ -89,12 +89,12 @@ func main() {
 	if err := b.DeclareQueue(orderQueue); err != nil {
 		log.Fatalf("failed to declare order queue: %v", err)
 	}
-	if err := b.BindQueue(orderQueue, event.ExchangeOrder, []string{event.RoutingKeyOrderRequested}); err != nil {
+	if err := b.BindQueue(orderQueue, event.ExchangeOrder, []string{event.RoutingKeyOrderCreated}); err != nil {
 		log.Fatalf("failed to bind order queue: %v", err)
 	}
 
 	oc := consumer.NewOrderConsumer(cr, b)
-	if err := oc.Start(event.ExchangeOrder, orderQueue, event.RoutingKeyOrderRequested); err != nil {
+	if err := oc.Start(event.ExchangeOrder, orderQueue, event.RoutingKeyOrderCreated); err != nil {
 		log.Fatalf("failed to start order consumer: %v", err)
 	}
 
