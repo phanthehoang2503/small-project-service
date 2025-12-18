@@ -10,7 +10,6 @@ import (
 )
 
 // RateLimitMiddleware creates a limiter based on Client IP.
-// limit: max requests allow
 func RateLimitMiddleware(client *redis.Client, limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
@@ -23,7 +22,6 @@ func RateLimitMiddleware(client *redis.Client, limit int, window time.Duration) 
 			return
 		}
 
-		// If first request (count == 1), set expiration
 		if count == 1 {
 			client.Expire(ctx, key, window)
 		}

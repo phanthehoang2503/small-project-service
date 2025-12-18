@@ -20,14 +20,15 @@ const (
 	RoutingKeyProductDeleted = "product.deleted"
 
 	// order domain
-	RoutingKeyOrderRequested = "order.requested"
+	// order domain
 	RoutingKeyOrderCreated   = "order.created"
-	RoutingKeyOrderPaid      = "order.paid"
 	RoutingKeyOrderCancelled = "order.cancelled"
 
 	// payment domain
-	RoutingKeyPaymentFailed = "payment.failed"
+	RoutingKeyPaymentSucceeded = "payment.succeeded"
+	RoutingKeyPaymentFailed    = "payment.failed"
 
-	// stock domain
-	RoutingKeyStockFailed = "stock.failed"
+	// inventory domain
+	RoutingKeyInventoryReserved          = "inventory.reserved"
+	RoutingKeyInventoryReservationFailed = "inventory.reservation.failed"
 )

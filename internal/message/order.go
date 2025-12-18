@@ -24,3 +24,17 @@ type StockFailed struct {
 	OrderUUID string `json:"order_uuid"`
 	Reason    string `json:"reason"`
 }
+
+// New structs for Refactor
+type InventoryReserved struct {
+	CorrelationID string `json:"correlation_id"`
+	OrderUUID     string `json:"order_uuid"`
+	UserID        uint   `json:"user_id"`
+	Total         int64  `json:"total"`
+	Currency      string `json:"currency"`
+}
+
+type InventoryReservationFailed struct {
+	OrderUUID string `json:"order_uuid"`
+	Reason    string `json:"reason"`
+}
