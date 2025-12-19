@@ -10,39 +10,74 @@ It’s not for production use — it’s designed for learning how real systems 
 Each service runs independently with its own routes, database models, and Swagger docs.
 All services communicate through REST and RabbitMQ.
 
+### Diagram 1: User's Placing Order
+
 ```mermaid
 sequenceDiagram
     participant User
+    participant Order as Order Service (API)
+    
+    User->>Order: 1. Click "Place Order"
+    Order-->>User: 2. Response: "Pending" (HTTP 201)
+    
+    loop Finite Polling (e.g., 3-5 attempts)
+        User->>Order: 3. GET /orders/{id}
+        alt Still Processing
+            Order-->>User: "Pending" (Client waits 1s...)
+        else Done (Paid)
+            Order-->>User: "Success! Status: Paid"
+        else Failed (Cancelled)
+            Order-->>User: "Failed! Status: Cancelled"
+        end
+    end
+
+``` 
+
+### Diagram 2: System Saga Logic
+
+```mermaid
+sequenceDiagram
+    participant Queue as RabbitMQ
     participant Order as Order Service
     participant Product as Product Service
     participant Payment as Payment Service
     participant Mailer as Mailer Service
-    
-    User->>Order: 1. Create Order (Pending)
-    
-    par Process Order
-        Order-)Product: 2a. Event: "order.requested"
-        Order-)Payment: 2b. Event: "order.requested"
-    end
-    
-    Note over Product: Stock Deduction
-    Product->>Product: Deduct Stock
-    alt Stock OK
-        Product->>Product: Invalidate Cache
-    else Stock Failed
-        Product-)Order: Event: "stock.failed"
-        Order->>Order: Cancel Order
-    end
 
-    Note over Payment: Payment Processing
-    alt Payment Success
-        Payment-)Order: 3. Event: "order.paid"
-        Order->>Order: 4. Update Status: Paid
-        Order-)Mailer: 5. Event: "order.paid"
-        Mailer->>Mailer: Send Receipt Email
-    else Payment Failed
-        Payment-)Order: 3. Event: "payment.failed"
-        Order->>Order: 4. Cancel Order
+    Note over Order: 1. Client places order
+    Order->>Queue: 1. Publish "order.created"
+
+    Queue->>Product: 2. Consume "order.created"
+    Note over Product: 2. Inventory logic
+    Product->>Product: 2. Reserve stock
+
+    alt Inventory reservation failed
+        Product->>Queue: 3a. Publish "inventory.reservation.failed"
+        Queue->>Order: 3a. Consume "inventory.reservation.failed"
+        Order->>Order: 3a. Update status = CANCELLED
+    else Inventory reserved
+        Product->>Queue: 3b. Publish "inventory.reserved"
+
+        Queue->>Payment: 4. Consume "inventory.reserved"
+        Note over Payment: 4. Payment logic
+        Payment->>Payment: 4. Charge customer
+
+        alt Payment failed
+            Payment->>Queue: 5a. Publish "payment.failed"
+
+            Queue->>Product: 6a. Consume "payment.failed"
+            Product->>Product: 6a. Release reserved stock
+
+            Queue->>Order: 6a. Consume "payment.failed"
+            Order->>Order: 6a. Update status = CANCELLED
+        else Payment succeeded
+            Payment->>Queue: 5b. Publish "payment.succeeded"
+
+            Queue->>Order: 6b. Consume "payment.succeeded"
+            Order->>Order: 6b. Update status = PAID
+
+            Queue->>Mailer: 6b. Consume "payment.succeeded"
+            Mailer->>Mailer: 6b. Send receipt email
+        end
     end
 ```
 ### Folder structure
@@ -169,7 +204,7 @@ The project includes a custom load testing tool in `load-test/main.go`. It simul
 # Reset stock for all products to 10,000 (always run this first when try this)
 go run load-test/main.go -replenish
 
-# Run with default settings
+# Run with default settings (5 users and 30 seconds of doing thing)
 go run load-test/main.go
 ```
 
