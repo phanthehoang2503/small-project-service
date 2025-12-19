@@ -12,7 +12,7 @@ services:
     networks: [ backend ]
 
   rabbitmq:
-    image: rabbitmq:4.2-alpine
+    image: rabbitmq:4.2-management-alpine
     ports:
       - "5672:5672"
       - "15672:15672"
