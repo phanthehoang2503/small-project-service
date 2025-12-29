@@ -27,7 +27,7 @@ func ListProducts(r *repo.Database) gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()}) // internal server error = 500
 		}
-		c.JSON(http.StatusOK, products) // status ok = 200
+		c.JSON(http.StatusOK, products)
 	}
 }
 

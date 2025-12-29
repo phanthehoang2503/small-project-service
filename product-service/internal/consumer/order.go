@@ -10,6 +10,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/product-service/internal/repo"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type OrderConsumer struct {
@@ -55,6 +56,10 @@ func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []by
 		// Try to deduct
 		if err := c.repo.BatchDeductStock(stockItems); err != nil {
 			log.Printf("[product-consumer] failed to deduct stock: %v", err)
+
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "stock_deduction_failed")
+
 			// Publish Failed
 			failEvent := message.InventoryReservationFailed{
 				OrderUUID: payload.OrderUUID,
@@ -90,24 +95,9 @@ func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []by
 
 	// 2. Handle Payment Failed (Compensation / Rollback)
 	if routingKey == event.RoutingKeyPaymentFailed {
-		// We need to parse payload to get items to add back?
-		// Actually the current Payment Failed payload might not have items...
-		// Let's check what Payment Failed payload has.
-		// If it only has ID, we might need to look up the order or ...
-		// Wait, for this demo, maybe we just log it because we don't have "Reverse Deduction" easily without knowing items.
-		// BUT the Implementation Plan says "Product already handled release".
-		// Ah, if Payment fails, it publishes payment.failed.
-		// To rollback, we need to know WHAT to rollback.
-		// SIMPLE FIX for Demo: The Payment Failed payload should ideally contain the items or we assume manual reconciliation.
-		// OR: We store the reservation temporarily.
-		// Given the constraints, I will implement a "Stub" for Rollback or try to read items if available.
-		// Checking message.PaymentFailed... likely doesn't have items.
-		// OK, I'll log that compensation is triggered. For a robust system, we'd query the Order Service to get items or store state.
-		// For this strict refactor, I will focus on the "Race Condition" fix (Order Created -> Stock).
-		// The Rollback of Stock on Payment Failure is a valid concern.
-		// Let's assume Payment Service passes back the Context/Items? No.
-		// Okay, I will implement the log for now.
-		log.Printf("[product-consumer] received payment.failed. trigger rollback logic (not fully implemented due to missing items in event)")
+		// TODO: Implement rollback logic.
+		// Currently, the payment.failed event does not contain item details needed to reverse stock.
+		log.Printf("[product-consumer] received payment.failed - rollback skipped (missing item details)")
 		return nil
 	}
 
