@@ -9,6 +9,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
+	"go.opentelemetry.io/otel"
 )
 
 type StockConsumer struct {
@@ -28,6 +29,10 @@ func (c *StockConsumer) Start(queueName string) error {
 }
 
 func (c *StockConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
+	tr := otel.Tracer("order-service")
+	ctx, span := tr.Start(ctx, "consumer.CompensateStockFailure")
+	defer span.End()
+
 	if routingKey != event.RoutingKeyInventoryReservationFailed {
 		return nil
 	}
@@ -41,7 +46,7 @@ func (c *StockConsumer) handle(ctx context.Context, routingKey string, body []by
 	log.Printf("[order-stock-consumer] received inventory.reservation.failed for order %s. Reason: %s", payload.OrderUUID, payload.Reason)
 
 	// Cancel the order
-	if _, err := c.repo.UpdateStatusByUUID(payload.OrderUUID, "Cancelled"); err != nil {
+	if err := c.repo.CompensateOrder(payload.OrderUUID, payload.Reason); err != nil {
 		log.Printf("[order-stock-consumer] failed to cancel order %s: %v", payload.OrderUUID, err)
 		return err // retry
 	}

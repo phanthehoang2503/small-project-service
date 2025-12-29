@@ -9,6 +9,7 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
 
@@ -38,6 +39,10 @@ func (c *OrderPaidConsumer) Start(queueName string) error {
 }
 
 func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
+	tr := otel.Tracer("order-service")
+	ctx, span := tr.Start(ctx, "consumer.ProcessPaymentEvent")
+	defer span.End()
+
 	if routingKey == event.RoutingKeyPaymentFailed {
 		return c.handlePaymentFailed(body)
 	}
@@ -95,8 +100,8 @@ func (c *OrderPaidConsumer) handlePaymentFailed(body []byte) error {
 
 	log.Printf("[payment-event-consumer] received payment.failed order=%s reason=%s", p.OrderUUID, p.Reason)
 
-	if _, err := c.repo.UpdateStatusByUUID(p.OrderUUID, "Cancelled"); err != nil {
-		log.Printf("[payment-event-consumer] failed to cancel order: %v", err)
+	if err := c.repo.CompensateOrder(p.OrderUUID, p.Reason); err != nil {
+		log.Printf("[payment-event-consumer] failed to compensate order: %v", err)
 		return err
 	}
 

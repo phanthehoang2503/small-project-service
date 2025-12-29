@@ -138,3 +138,8 @@ func (r *OrderRepo) UpdateStatusIfNot(orderUUID, status string, forbiddenStates 
 	}
 	return &ord, nil
 }
+
+func (r *OrderRepo) CompensateOrder(uuid string, reason string) error {
+	_, err := r.UpdateStatusByUUID(uuid, "Cancelled")
+	return err
+}
