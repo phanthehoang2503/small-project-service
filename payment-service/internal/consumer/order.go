@@ -12,6 +12,8 @@ import (
 	"github.com/phanthehoang2503/small-project/internal/logger"
 	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/repo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type PaymentConsumer struct {
@@ -31,6 +33,10 @@ func (pc *PaymentConsumer) Start(queueName string) error {
 
 // handle implements the signature expected by broker.Consume: func(ctx context.Context, routingKey string, body []byte) error
 func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body []byte) error {
+	tr := otel.Tracer("payment-service")
+	ctx, span := tr.Start(ctx, "consumer.ProcessPayment")
+	defer span.End()
+
 	// expect inventory.reserved
 	if routingKey != event.RoutingKeyInventoryReserved {
 		log.Printf("[payment-consumer] unexpected routing key: %s", routingKey)
@@ -45,9 +51,25 @@ func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body [
 
 	log.Printf("[payment-consumer] processing inventory.reserved order=%s amount=%d", payload.OrderUUID, payload.Total)
 
+	// SIMULATED FAILURE for Demo/Testing
+	if payload.Total == 6666 {
+		err := fmt.Errorf("simulated payment failure (amount=6666)")
+		log.Printf("[payment-consumer] triggering chaos: %v", err)
+
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "simulated_failure")
+
+		pc.publishFailure(ctx, payload.OrderUUID, payload.CorrelationID, "simulated_payment_declined")
+		return nil // Return nil so we acknowledge the message (don't retry endlessly)
+	}
+
 	if _, err := pc.repo.CreatePending(payload.OrderUUID, payload.Total, payload.Currency); err != nil {
 		log.Printf("[payment-consumer] db create failed: %v", err)
 		logger.Error(ctx, fmt.Sprintf("Payment failed (db create): order=%s err=%v", payload.OrderUUID, err))
+
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "db_create_failed")
+
 		pc.publishFailure(ctx, payload.OrderUUID, payload.CorrelationID, "db_create_failed")
 		return err
 	}
@@ -56,6 +78,10 @@ func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body [
 
 	if err := pc.repo.PaymentSucceeded(payload.OrderUUID); err != nil {
 		log.Printf("[payment-consumer] update succeeded failed: %v", err)
+
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "update_status_failed")
+
 		pc.publishFailure(ctx, payload.OrderUUID, payload.CorrelationID, "update_status_failed")
 		return err
 	}
