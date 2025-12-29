@@ -25,7 +25,6 @@ type StockFailed struct {
 	Reason    string `json:"reason"`
 }
 
-// New structs for Refactor
 type InventoryReserved struct {
 	CorrelationID string `json:"correlation_id"`
 	OrderUUID     string `json:"order_uuid"`

@@ -18,8 +18,6 @@ func ConnectRabbit() *broker.Broker {
 	// Init broker (it handles reconnection internally)
 	b, err := broker.Init(rabbitURL)
 	if err != nil {
-		// If initial connection fails, we might want to retry a few times
-		// or just fail fast. For now, let's retry a bit to wait for RabbitMQ container.
 		for i := 0; i < 10; i++ {
 			log.Printf("attempt %d: connecting to RabbitMQ...", i+1)
 			b, err = broker.Init(rabbitURL)
