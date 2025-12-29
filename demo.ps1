@@ -86,10 +86,30 @@ function Test-StockFailure($token) {
   Request "POST" "http://localhost:8082/cart" @{ product_id = $prod.id; quantity = 50 } $token | Out-Null
     
   Request "PUT" "http://localhost:8081/products/$($prod.id)" @{ name = $prod.name; price = $prod.price; stock = 0 } | Out-Null
-  Write-Log "INFO" "Stock intentionally sabotaged to 0."
+  Write-Log "INFO" "Stock sabotaged to 0."
 
   Write-Log "STEP" "Checking Out"
   $order = Request "POST" "http://localhost:8083/orders" @{} $token
+    
+  Write-Log "STEP" "Waiting for Saga..."
+  Start-Sleep -Seconds 5
+    
+  $finalOrder = Request "GET" "http://localhost:8083/orders/$($order.id)" $null $token
+  Assert-Equal $finalOrder.status "Cancelled" "Order status should be Cancelled"
+  Assert-Equal $finalOrder.status "Cancelled" "Order status should be Cancelled"
+}
+
+function Test-PaymentFailure($token) {
+  Write-Log "HEADER" "Test 2b: Payment Failure (Chaos)"
+
+  Write-Log "STEP" "Creating Cursed Product (Price 6666)"
+  $prod = (Request "POST" "http://localhost:8081/products" @( @{ name = "Cursed Product"; price = 6666; stock = 10 } ))[0]
+    
+  Request "POST" "http://localhost:8082/cart" @{ product_id = $prod.id; quantity = 1 } $token | Out-Null
+    
+  Write-Log "STEP" "Checking Out (Should Fail Payment)"
+  $order = Request "POST" "http://localhost:8083/orders" @{} $token
+  Write-Log "INFO" "Order Created: $($order.uuid)"
     
   Write-Log "STEP" "Waiting for Saga..."
   Start-Sleep -Seconds 5
@@ -134,6 +154,7 @@ try {
     
   Test-HappyPath $token
   Test-StockFailure $token
+  Test-PaymentFailure $token
   Test-Rollback $token
 
   Write-Log "HEADER" "Test Summary"

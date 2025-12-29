@@ -159,6 +159,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config/grafana/provisioning/dashboards/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
+      - ./config/grafana/provisioning/dashboards/json/logs.json:/etc/grafana/provisioning/dashboards/json/logs.json
     depends_on:
       - loki
     networks: [ backend ]
