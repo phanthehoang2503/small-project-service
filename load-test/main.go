@@ -56,6 +56,12 @@ func main() {
 		return
 	}
 
+	// check if products exist, if not, seed them
+	if err := checkAndSeed(cfg); err != nil {
+		fmt.Printf("Failed to seed products: %v\n", err)
+		return
+	}
+
 	fmt.Printf("Starting Load Test with %d users for %v...\n", cfg.Concurrency, cfg.Duration)
 	fmt.Println("------------------------------------------------")
 
@@ -311,7 +317,7 @@ func replenishStock(cfg Config) {
 	}
 
 	for _, p := range products {
-		p.Stock = 10000
+		p.Stock = 99999999
 		body, _ := json.Marshal(p)
 		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/products/%d", cfg.ProductServiceURL, p.ID), bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -326,4 +332,38 @@ func replenishStock(cfg Config) {
 		resp.Body.Close()
 	}
 	fmt.Println("Stock replenishment execution complete.")
+}
+
+func checkAndSeed(cfg Config) error {
+	client := &http.Client{Timeout: 30 * time.Second}
+	products, err := getProducts(client, cfg)
+	if err != nil {
+		return err
+	}
+
+	if len(products) > 0 {
+		return nil
+	}
+
+	fmt.Println("No products found. Seeding 20 test products...")
+	for i := 1; i <= 20; i++ {
+		p := map[string]interface{}{
+			"name":  fmt.Sprintf("Product %d", i),
+			"price": rand.Intn(100) + 10,
+			"stock": 10000,
+		}
+		// Fix: API expects an array of products
+		body, _ := json.Marshal([]map[string]interface{}{p})
+		resp, err := client.Post(cfg.ProductServiceURL+"/products", "application/json", bytes.NewBuffer(body))
+		if err != nil {
+			return fmt.Errorf("failed to create product %d: %v", i, err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+			b, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("failed to create product %d: status=%d body=%s", i, resp.StatusCode, string(b))
+		}
+	}
+	fmt.Println("Seeding complete.")
+	return nil
 }
