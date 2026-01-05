@@ -66,6 +66,7 @@ func main() {
 	bindingKeys := []string{
 		event.RoutingKeyOrderCreated,
 		event.RoutingKeyPaymentFailed,
+		event.RoutingKeyOrderCancelled,
 	}
 	if err := b.BindQueue(queueName, event.ExchangeOrder, bindingKeys); err != nil {
 		log.Fatalf("Failed to bind queue: %v", err)

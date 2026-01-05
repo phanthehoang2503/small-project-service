@@ -46,7 +46,7 @@ func (c *StockConsumer) handle(ctx context.Context, routingKey string, body []by
 	log.Printf("[order-stock-consumer] received inventory.reservation.failed for order %s. Reason: %s", payload.OrderUUID, payload.Reason)
 
 	// Cancel the order
-	if err := c.repo.CompensateOrder(payload.OrderUUID, payload.Reason); err != nil {
+	if _, err := c.repo.CompensateOrder(payload.OrderUUID, payload.Reason); err != nil {
 		log.Printf("[order-stock-consumer] failed to cancel order %s: %v", payload.OrderUUID, err)
 		return err // retry
 	}

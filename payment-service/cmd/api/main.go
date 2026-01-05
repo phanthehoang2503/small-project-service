@@ -18,8 +18,17 @@ import (
 	"github.com/phanthehoang2503/small-project/payment-service/internal/consumer"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/model"
 	"github.com/phanthehoang2503/small-project/payment-service/internal/repo"
+
+	_ "github.com/phanthehoang2503/small-project/payment-service/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Payment Service API
+// @version 1.0
+// @description Manage payments
+// @host localhost:8086
+// @BasePath /
 func main() {
 	godotenv.Load()
 
@@ -71,15 +80,29 @@ func main() {
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())
 	r.Use(otelgin.Middleware("payment-service"))
-	r.GET("/payments/:order_uuid", func(c *gin.Context) {
+
+	r.GET("/payments/:order_uuid", GetPaymentByOrderUUID(payRepo))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	r.Run(":8086")
+}
+
+// GetPaymentByOrderUUID godoc
+// @Summary Get payment details by order UUID
+// @Tags Payments
+// @Produce json
+// @Param order_uuid path string true "Order UUID"
+// @Success 200 {object} model.Payment
+// @Failure 404 {object} map[string]string
+// @Router /payments/{order_uuid} [get]
+func GetPaymentByOrderUUID(repo *repo.PaymentRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		orderUUID := c.Param("order_uuid")
-		p, err := payRepo.GetByOrderUUID(orderUUID)
+		p, err := repo.GetByOrderUUID(orderUUID)
 		if err != nil {
 			c.JSON(404, gin.H{"error": "not found"})
 			return
 		}
 		c.JSON(200, p)
-	})
-
-	r.Run(":8086")
+	}
 }

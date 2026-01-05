@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/phanthehoang2503/small-project/cart-service/internal/model"
@@ -83,15 +84,30 @@ func AddToCart(r repo.CartRepository, pr *repo.ProductRepo) gin.HandlerFunc {
 			url := fmt.Sprintf("%s/%d", base, in.ProductID)
 			req, _ := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
 			otel.GetTextMapPropagator().Inject(c.Request.Context(), propagation.HeaderCarrier(req.Header))
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Printf("Failed to fetch product: %v", err)
-				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
+			client := &http.Client{Timeout: 3 * time.Second}
+			var resp *http.Response
+			var reqErr error
+
+			for i := 0; i < 3; i++ {
+				resp, reqErr = client.Do(req)
+				if reqErr == nil && resp.StatusCode == http.StatusOK {
+					break
+				}
+				// Log retry
+				if reqErr != nil {
+					log.Printf("[cart-handler] attempt %d failed: %v", i+1, reqErr)
+				} else {
+					log.Printf("[cart-handler] attempt %d returned status: %d", i+1, resp.StatusCode)
+					resp.Body.Close()
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+
+			if reqErr != nil {
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "failed to connect to product service"})
 				return
 			}
 			if resp.StatusCode != http.StatusOK {
-				log.Printf("Fetch product returned status: %d", resp.StatusCode)
 				c.JSON(http.StatusBadRequest, gin.H{"error": "product not found"})
 				return
 			}

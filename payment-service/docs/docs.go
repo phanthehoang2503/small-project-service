@@ -14,17 +14,83 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {}
+    "paths": {
+        "/payments/{order_uuid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get payment details by order UUID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order UUID",
+                        "name": "order_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Payment"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer",
+                    "example": 50000
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "VND"
+                },
+                "order_uuid": {
+                    "type": "string",
+                    "example": "2133223-123213-3213"
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "momo"
+                },
+                "status": {
+                    "description": "PENDING, SUCCEEDED, FAILED",
+                    "type": "string",
+                    "example": "paid"
+                }
+            }
+        }
+    }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
+	Version:          "1.0",
+	Host:             "localhost:8086",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Payment Service API",
+	Description:      "Manage payments",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -72,8 +72,9 @@ func StartConsumer(amqpURL, exchange, queueName, bindingKey string) error {
 		MaxAge:     14,
 		Compress:   true,
 	}
-	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	writer := zerolog.MultiLevelWriter(consoleWriter, lumber)
+	// Use JSON output for better parsing in Loki/Grafana
+	// consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	writer := zerolog.MultiLevelWriter(os.Stdout, lumber)
 	zerolog.TimeFieldFormat = time.RFC3339
 	logger := zerolog.New(writer).With().Timestamp().Str("service", "logger-service").Logger()
 

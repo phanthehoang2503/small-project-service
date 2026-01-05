@@ -1,7 +1,78 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Manage payments",
+        "title": "Payment Service API",
+        "contact": {},
+        "version": "1.0"
     },
-    "paths": {}
+    "host": "localhost:8086",
+    "basePath": "/",
+    "paths": {
+        "/payments/{order_uuid}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get payment details by order UUID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order UUID",
+                        "name": "order_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Payment"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer",
+                    "example": 50000
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "VND"
+                },
+                "order_uuid": {
+                    "type": "string",
+                    "example": "2133223-123213-3213"
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "momo"
+                },
+                "status": {
+                    "description": "PENDING, SUCCEEDED, FAILED",
+                    "type": "string",
+                    "example": "paid"
+                }
+            }
+        }
+    }
 }

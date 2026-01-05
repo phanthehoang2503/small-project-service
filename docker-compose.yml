@@ -114,6 +114,20 @@ services:
       - "8084:8084"
     networks: [ backend ]
 
+  gateway-service:
+    build:
+      context: .
+      dockerfile: ./gateway-service/Dockerfile
+    ports:
+      - "8888:8080"
+    networks:
+      - backend
+    depends_on:
+      - product-service
+      - auth-service
+      - cart-service
+      - order-service
+
   mailer-service:
     build:
       context: .

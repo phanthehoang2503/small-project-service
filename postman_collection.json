@@ -1,0 +1,479 @@
+{
+  "info": {
+    "_postman_id": "c1f2e3d4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
+    "name": "Small Project Demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Setup & Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"demo@example.com\",\n    \"username\": \"demo_user\",\n    \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"token\", jsonData.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"login\": \"demo@example.com\",\n    \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "http://localhost:8888/cart"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Happy Path",
+      "item": [
+        {
+          "name": "Create Valid Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"name\": \"Valid Postman Product\",\n        \"price\": 1000,\n        \"stock\": 100\n    }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": {{product_id}},\n    \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/cart"
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout (Create Order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"order_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "http://localhost:8888/orders/{{order_id}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Stock Failure",
+      "item": [
+        {
+          "name": "Create Fail Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"fail_product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"name\": \"Valid Postman Product\",\n        \"price\": 1000,\n        \"stock\": 100\n    }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": {{fail_product_id}},\n    \"quantity\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/cart"
+          },
+          "response": []
+        },
+        {
+          "name": "Sabotage Stock (Set to 0)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Stock Fail Product\",\n    \"price\": 1000,\n    \"stock\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/products/{{fail_product_id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"fail_order_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Cancelled Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "http://localhost:8888/orders/{{fail_order_id}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Saga Rollback",
+      "item": [
+        {
+          "name": "Create Safe Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"safe_product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"name\": \"Safe Product\",\n        \"price\": 100,\n        \"stock\": 50\n    }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Cursed Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"cursed_product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n    {\n        \"name\": \"Cursed Product\",\n        \"price\": 100000000,\n        \"stock\": 50\n    }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Safe to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": {{safe_product_id}},\n    \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/cart"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Cursed to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": {{cursed_product_id}},\n    \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/cart"
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout (Trigger Rollback)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"rollback_order_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "http://localhost:8888/orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Cancelled",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": "http://localhost:8888/orders/{{rollback_order_id}}"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

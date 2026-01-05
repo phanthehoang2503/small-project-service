@@ -93,11 +93,45 @@ func (c *OrderConsumer) handle(ctx context.Context, routingKey string, body []by
 		return nil
 	}
 
-	// 2. Handle Payment Failed (Compensation / Rollback)
+	// 2. Handle Order Cancelled (Compensation / Restock)
+	if routingKey == event.RoutingKeyOrderCancelled {
+		var payload message.OrderCancelled
+		if err := json.Unmarshal(body, &payload); err != nil {
+			log.Printf("[product-consumer] failed to unmarshal order.cancelled: %v", err)
+			return nil
+		}
+		log.Printf("[product-consumer] received order.cancelled order=%s reason=%s items=%d", payload.OrderUUID, payload.Reason, len(payload.Items))
+
+		var stockItems []repo.StockItem
+		for _, item := range payload.Items {
+			stockItems = append(stockItems, repo.StockItem{
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+			})
+		}
+
+		// Restock
+		if err := c.repo.BatchRestock(stockItems); err != nil {
+			log.Printf("[product-consumer] failed to restock: %v", err)
+			span.RecordError(err)
+			return err
+		}
+
+		// Invalidate Cache
+		for _, item := range payload.Items {
+			if c.cache != nil {
+				c.cache.InvalidateProduct(ctx, item.ProductID)
+			}
+		}
+
+		log.Printf("[product-consumer] stock restored for order %s", payload.OrderUUID)
+		return nil
+	}
+
+	// 3. Handle Payment Failed (Deprecated - handled via order.cancelled)
 	if routingKey == event.RoutingKeyPaymentFailed {
-		// TODO: Implement rollback logic.
-		// Currently, the payment.failed event does not contain item details needed to reverse stock.
-		log.Printf("[product-consumer] received payment.failed - rollback skipped (missing item details)")
+		// We ignore this now because we wait for order.cancelled which has item details.
+		log.Printf("[product-consumer] received payment.failed - waiting for order.cancelled to rollback")
 		return nil
 	}
 

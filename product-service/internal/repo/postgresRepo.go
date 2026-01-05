@@ -87,3 +87,18 @@ func (d *Database) BatchDeductStock(items []StockItem) error {
 		return nil
 	})
 }
+
+func (d *Database) BatchRestock(items []StockItem) error {
+	return d.DB.Transaction(func(tx *gorm.DB) error {
+		for _, item := range items {
+			res := tx.Model(&model.Product{}).
+				Where("id = ?", item.ProductID).
+				Update("stock", gorm.Expr("stock + ?", item.Quantity))
+
+			if res.Error != nil {
+				return res.Error
+			}
+		}
+		return nil
+	})
+}

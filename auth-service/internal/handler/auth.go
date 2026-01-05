@@ -15,14 +15,14 @@ import (
 )
 
 type registerReq struct {
-	Email    string `json:"email" binding:"required,email"`
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required,email" example:"user@example.com"`
+	Username string `json:"username" binding:"required,alphanum" example:"username123"`
+	Password string `json:"password" binding:"required" example:"secret123"`
 }
 
 type loginReq struct {
-	Login    string `json:"login" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Login    string `json:"login" binding:"required" example:"user@example.com"`
+	Password string `json:"password" binding:"required" example:"secret123"`
 }
 
 type AuthHandler struct {

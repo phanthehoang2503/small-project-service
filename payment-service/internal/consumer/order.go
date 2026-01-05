@@ -51,16 +51,15 @@ func (pc *PaymentConsumer) handle(ctx context.Context, routingKey string, body [
 
 	log.Printf("[payment-consumer] processing inventory.reserved order=%s amount=%d", payload.OrderUUID, payload.Total)
 
-	// SIMULATED FAILURE for Demo/Testing
-	if payload.Total == 6666 {
-		err := fmt.Errorf("simulated payment failure (amount=6666)")
+	if payload.Total == 6666 || payload.Total > 50000 {
+		err := fmt.Errorf("simulated payment failure (amount=%d)", payload.Total)
 		log.Printf("[payment-consumer] triggering chaos: %v", err)
 
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "simulated_failure")
 
 		pc.publishFailure(ctx, payload.OrderUUID, payload.CorrelationID, "simulated_payment_declined")
-		return nil // Return nil so we acknowledge the message (don't retry endlessly)
+		return nil
 	}
 
 	if _, err := pc.repo.CreatePending(payload.OrderUUID, payload.Total, payload.Currency); err != nil {

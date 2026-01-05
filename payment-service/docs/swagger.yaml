@@ -1,4 +1,53 @@
+basePath: /
+definitions:
+  model.Payment:
+    properties:
+      amount:
+        example: 50000
+        type: integer
+      currency:
+        example: VND
+        type: string
+      order_uuid:
+        example: 2133223-123213-3213
+        type: string
+      provider:
+        example: momo
+        type: string
+      status:
+        description: PENDING, SUCCEEDED, FAILED
+        example: paid
+        type: string
+    type: object
+host: localhost:8086
 info:
   contact: {}
-paths: {}
+  description: Manage payments
+  title: Payment Service API
+  version: "1.0"
+paths:
+  /payments/{order_uuid}:
+    get:
+      parameters:
+      - description: Order UUID
+        in: path
+        name: order_uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Payment'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get payment details by order UUID
+      tags:
+      - Payments
 swagger: "2.0"

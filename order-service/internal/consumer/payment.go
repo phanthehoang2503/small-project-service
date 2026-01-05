@@ -8,6 +8,7 @@ import (
 
 	"github.com/phanthehoang2503/small-project/internal/broker"
 	"github.com/phanthehoang2503/small-project/internal/event"
+	"github.com/phanthehoang2503/small-project/internal/message"
 	"github.com/phanthehoang2503/small-project/order-service/internal/repo"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -48,7 +49,6 @@ func (c *OrderPaidConsumer) handle(ctx context.Context, routingKey string, body 
 	}
 
 	if routingKey != event.RoutingKeyPaymentSucceeded {
-		// ignore unrelated keys but ack
 		return nil
 	}
 
@@ -100,9 +100,30 @@ func (c *OrderPaidConsumer) handlePaymentFailed(body []byte) error {
 
 	log.Printf("[payment-event-consumer] received payment.failed order=%s reason=%s", p.OrderUUID, p.Reason)
 
-	if err := c.repo.CompensateOrder(p.OrderUUID, p.Reason); err != nil {
+	ord, err := c.repo.CompensateOrder(p.OrderUUID, p.Reason)
+	if err != nil {
 		log.Printf("[payment-event-consumer] failed to compensate order: %v", err)
 		return err
+	}
+
+	// Publish OrderCancelled event (so Product Service can rollback stock)
+	if ord != nil {
+		var items []message.OrderItem
+		for _, i := range ord.Items {
+			items = append(items, message.OrderItem{
+				ProductID: i.ProductID,
+				Quantity:  i.Quantity,
+			})
+		}
+
+		evt := message.OrderCancelled{
+			OrderUUID: ord.UUID,
+			Reason:    p.Reason,
+			Items:     items,
+		}
+		if err := c.b.PublishJSON(context.Background(), event.ExchangeOrder, event.RoutingKeyOrderCancelled, evt); err != nil {
+			log.Printf("[payment-event-consumer] failed to publish order.cancelled: %v", err)
+		}
 	}
 
 	log.Printf("[payment-event-consumer] order cancelled uuid=%s", p.OrderUUID)

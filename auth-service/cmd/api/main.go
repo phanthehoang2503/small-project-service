@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -68,8 +69,13 @@ func main() {
 	r.Use(otelgin.Middleware("auth-service"))
 	r.Use(middleware.CORSMiddleware())
 
-	// Apply rate limit specifically to login: 5 requests per minute
-	loginLimiter := middleware.RateLimitMiddleware(rdb, 5, time.Minute)
+	// Apply rate limit specifically to login
+	rateLimitStr := os.Getenv("LOGIN_RATE_LIMIT")
+	limit := 10 // default
+	if val, err := strconv.Atoi(rateLimitStr); err == nil && val > 0 {
+		limit = val
+	}
+	loginLimiter := middleware.RateLimitMiddleware(rdb, limit, time.Minute)
 
 	router.RegisterRoutes(r, authHandler, jwtSecret, loginLimiter)
 
